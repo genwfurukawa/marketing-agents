@@ -1,0 +1,443 @@
+#!/usr/bin/env python3
+"""Build data-driven deliverables 04, 05, 06 from existing inputs.
+
+Inputs:
+  - 03_citation_scan/perplexity/batch-results.json (31 queries)
+  - 03_citation_scan/claude/claude-results.json (27 queries)
+  - 03_citation_scan/perplexity/domain_frequency.csv
+  - _raw/site_explorer_metrics.json
+  - _raw/site_explorer_dr_history.json
+  - _raw/site_explorer_refdomains_history.json
+  - _raw/site_explorer_top_pages_all.json
+  - _raw/keywords_explorer_category_seeds.json
+  - 02_query_bank.json
+  - GSC summary at research/gsc/2026-04-22_summary.md (we already pulled)
+
+Outputs:
+  - 04_keyword_opportunities.csv (striking-distance + low-difficulty + gap keywords)
+  - 05_gap_matrix.md (5 competitors x queries WIN/LOSS/ABSENT)
+  - 06_citation_sources.md (cited domains analysis with refdomain context)
+"""
+import csv
+import json
+from collections import Counter, defaultdict
+from pathlib import Path
+from urllib.parse import urlparse
+
+ROOT = Path("/Users/genfurukawa/talkadot/research/audits/2026-04-23")
+PERP = ROOT / "03_citation_scan/perplexity/batch-results.json"
+CLAUDE = ROOT / "03_citation_scan/claude/claude-results.json"
+KW_EXPLORER = ROOT / "_raw/keywords_explorer_category_seeds.json"
+QUERY_BANK = ROOT / "02_query_bank.json"
+
+CLIENT = "talkadot.com"
+COMPETITORS = {
+    "espeakers.com": "eSpeakers",
+    "speakerhub.com": "SpeakerHub",
+    "bigspeak.com": "BigSpeak",
+    "allamericanspeakers.com": "AAE Speakers",
+    "bark.com": "Bark.com",
+}
+TRACKED = {CLIENT: "Talkadot", **COMPETITORS}
+
+
+def normalize_domain(d: str) -> str:
+    if not d:
+        return ""
+    d = d.lower().strip()
+    if d.startswith("www."):
+        d = d[4:]
+    return d
+
+
+def load_perplexity():
+    """Returns dict: query -> list of (domain, position, url)."""
+    with open(PERP) as f:
+        data = json.load(f)
+    out = {}
+    for q in data:
+        results = []
+        for r in q.get("results", []):
+            d = normalize_domain(r.get("domain", ""))
+            if d:
+                results.append((d, r.get("position", -1), r.get("url", "")))
+        out[q["query"]] = results
+    return out
+
+
+def load_claude():
+    """Returns dict: query -> list of (domain, first-mention-pos, url)."""
+    with open(CLAUDE) as f:
+        data = json.load(f)
+    out = {}
+    for r in data:
+        domains_seen = {}
+        for i, d in enumerate(r.get("cited_domains", [])):
+            d_norm = normalize_domain(d)
+            if d_norm and d_norm not in domains_seen:
+                domains_seen[d_norm] = i
+        out[r["query"]] = [
+            (d, pos, "") for d, pos in domains_seen.items()
+        ]
+    return out
+
+
+def is_tracked(domain: str, target: str) -> bool:
+    return domain == target or domain.endswith("." + target)
+
+
+def find_position(results: list, target: str):
+    """Return position of target in results, or None if absent."""
+    for d, pos, _ in results:
+        if is_tracked(d, target):
+            return pos
+    return None
+
+
+# ============= DELIVERABLE 04: Keyword Opportunities =============
+def build_keyword_opportunities():
+    out_csv = ROOT / "04_keyword_opportunities.csv"
+
+    # Load Ahrefs Keywords Explorer
+    with open(KW_EXPLORER) as f:
+        kw_data = json.load(f)
+
+    # Filter to actionable: volume >= 30, has difficulty
+    rows = []
+    for k in kw_data["top_5_priority_targets"]:
+        rows.append({
+            "keyword": k["keyword"],
+            "volume": k["volume"],
+            "difficulty": k["difficulty"],
+            "cpc_usd": k["cpc_usd"],
+            "traffic_potential": k["traffic_potential"],
+            "intent": k["intent"],
+            "tier": k["rank_priority"].split(" ")[1] if "TIER" in k["rank_priority"] else "TIER 2",
+            "format": k["format"],
+            "current_winner": "(see gap matrix)",
+            "talkadot_position": "not ranked (0 of 60 ranked kws)",
+            "source": "Ahrefs Keywords Explorer matching-terms",
+            "notes": k["rank_priority"],
+        })
+
+    # Add long-tail high-intent pricing queries from kw_data
+    for q in kw_data["long_tail_signals"]["high_intent_pricing_questions"]:
+        kw_text = q.split(" (vol")[0]
+        vol = int(q.split("vol ")[1].rstrip(")"))
+        rows.append({
+            "keyword": kw_text,
+            "volume": vol,
+            "difficulty": "low (year-tagged long-tail)",
+            "cpc_usd": "n/a",
+            "traffic_potential": "n/a",
+            "intent": "commercial+transactional",
+            "tier": "Tier 3 (long-tail)",
+            "format": "FAQ Hub / Definition page",
+            "current_winner": "varies",
+            "talkadot_position": "absent",
+            "source": "Ahrefs Keywords Explorer long-tail",
+            "notes": "Year-tagged 2025; refresh to 2026 for freshness",
+        })
+
+    # Add the Game B gap queries from Arel's baseline (those NOT cited on either engine)
+    perp = load_perplexity()
+    claude = load_claude()
+    with open(QUERY_BANK) as f:
+        bank = json.load(f)
+    for q in bank["queries"]:
+        if not q.get("baseline"):
+            continue
+        if q["side"] != "planner":
+            continue
+        # Check if Talkadot is absent from BOTH engines
+        absent_perp = q["q"] in perp and find_position(perp[q["q"]], CLIENT) is None
+        absent_claude = q["q"] in claude and find_position(claude[q["q"]], CLIENT) is None
+        if absent_perp and absent_claude:
+            rows.append({
+                "keyword": q["q"],
+                "volume": "see Arel baseline (Section 10)",
+                "difficulty": "varies",
+                "cpc_usd": "n/a",
+                "traffic_potential": "n/a",
+                "intent": q.get("intent", ""),
+                "tier": f"Arel baseline T{q['tier']}",
+                "format": "varies (see gap matrix)",
+                "current_winner": "(see gap matrix and Perplexity per-query winners)",
+                "talkadot_position": "ABSENT in both Perplexity and Claude",
+                "source": "Arel baseline gap (absent in measured engines)",
+                "notes": q.get("notes", ""),
+            })
+
+    with open(out_csv, "w", newline="") as f:
+        if not rows:
+            f.write("")
+            return out_csv
+        keys = list(rows[0].keys())
+        w = csv.DictWriter(f, fieldnames=keys)
+        w.writeheader()
+        for r in rows:
+            w.writerow(r)
+    print(f"Wrote: {out_csv} ({len(rows)} rows)")
+    return out_csv
+
+
+# ============= DELIVERABLE 05: Competitor Content Gap Matrix =============
+def build_gap_matrix():
+    out_md = ROOT / "05_gap_matrix.md"
+    perp = load_perplexity()
+    claude = load_claude()
+
+    with open(QUERY_BANK) as f:
+        bank = json.load(f)
+    queries = bank["queries"]
+
+    def cell(query, domain, engine_data):
+        if query not in engine_data:
+            return "-"
+        pos = find_position(engine_data[query], domain)
+        if pos is None:
+            return "ABSENT"
+        if pos == 0:
+            return "WIN (0)"
+        if pos <= 2:
+            return f"WIN ({pos})"
+        if pos <= 5:
+            return f"PRESENT ({pos})"
+        return f"WEAK ({pos})"
+
+    lines = [
+        "# Competitor Content Gap Matrix - 2026-04-23",
+        "",
+        "Talkadot vs 5 locked competitors across 31 queries, scored across Perplexity (P) and Claude (C) citation scans.",
+        "",
+        "**Cell key:**",
+        "- `WIN (n)` = cited at position 0-2",
+        "- `PRESENT (n)` = cited at position 3-5",
+        "- `WEAK (n)` = cited at position 6+",
+        "- `ABSENT` = not cited",
+        "- `-` = query not run on this engine",
+        "",
+        "## Headline tally",
+        "",
+    ]
+
+    # Compute totals
+    all_domains = [CLIENT] + list(COMPETITORS)
+    totals = {d: {"perp_win": 0, "perp_present": 0, "perp_absent": 0, "claude_win": 0, "claude_present": 0, "claude_absent": 0} for d in all_domains}
+    for q in queries:
+        qt = q["q"]
+        for d in all_domains:
+            for engine_key, engine_data in [("perp", perp), ("claude", claude)]:
+                if qt not in engine_data:
+                    continue
+                pos = find_position(engine_data[qt], d)
+                if pos is None:
+                    totals[d][f"{engine_key}_absent"] += 1
+                elif pos <= 2:
+                    totals[d][f"{engine_key}_win"] += 1
+                elif pos <= 5:
+                    totals[d][f"{engine_key}_present"] += 1
+
+    lines += ["| Domain | Perp WIN | Perp PRESENT | Perp ABSENT | Claude WIN | Claude PRESENT | Claude ABSENT |", "|---|---|---|---|---|---|---|"]
+    for d in all_domains:
+        label = TRACKED[d] + (" (CLIENT)" if d == CLIENT else "")
+        t = totals[d]
+        lines.append(f"| {label} | {t['perp_win']} | {t['perp_present']} | {t['perp_absent']} | {t['claude_win']} | {t['claude_present']} | {t['claude_absent']} |")
+    lines.append("")
+
+    # Per-query matrix
+    lines += [
+        "## Full matrix",
+        "",
+        "P = Perplexity result, C = Claude result. Talkadot first, then competitors in alpha order.",
+        "",
+        "| Query | Tier | Talkadot P | Talkadot C | eSpeakers P | eSpeakers C | SpeakerHub P | SpeakerHub C | BigSpeak P | BigSpeak C | AAE P | AAE C | Bark P | Bark C |",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
+    ]
+    for q in queries:
+        qt = q["q"]
+        tier = f"T{q['tier']}" + ("*" if q.get("baseline") else "")
+        row = [qt, tier]
+        for d in all_domains:
+            row.append(cell(qt, d, perp))
+            row.append(cell(qt, d, claude))
+        lines.append("| " + " | ".join(row) + " |")
+
+    lines += [
+        "",
+        "*Tier with asterisk = Arel baseline query (one of the 20 success-metric queries from AEO Strategy Section 10).",
+        "",
+        "## Talkadot wins (cited at position 0-2 on either engine)",
+        "",
+    ]
+    for q in queries:
+        qt = q["q"]
+        perp_pos = find_position(perp.get(qt, []), CLIENT)
+        claude_pos = find_position(claude.get(qt, []), CLIENT)
+        if (perp_pos is not None and perp_pos <= 2) or (claude_pos is not None and claude_pos <= 2):
+            base = " *(Arel baseline)*" if q.get("baseline") else ""
+            lines.append(f"- `{qt}`{base} - P: {perp_pos if perp_pos is not None else 'absent'} | C: {claude_pos if claude_pos is not None else 'absent'}")
+    lines.append("")
+
+    lines += ["## Competitor wins where Talkadot is absent (highest-priority content gaps)", ""]
+    for q in queries:
+        qt = q["q"]
+        if not q.get("baseline"):
+            continue  # focus on Arel baseline for top gaps
+        perp_pos = find_position(perp.get(qt, []), CLIENT)
+        claude_pos = find_position(claude.get(qt, []), CLIENT)
+        if perp_pos is None and claude_pos is None:
+            # Find which competitor wins
+            comp_wins = []
+            for c in COMPETITORS:
+                p_pos = find_position(perp.get(qt, []), c)
+                cl_pos = find_position(claude.get(qt, []), c)
+                if (p_pos is not None and p_pos <= 5) or (cl_pos is not None and cl_pos <= 5):
+                    comp_wins.append(f"{COMPETITORS[c]} (P:{p_pos} C:{cl_pos})")
+            comp_str = ", ".join(comp_wins) if comp_wins else "no locked competitor wins either; content sites dominate"
+            lines.append(f"- `{qt}` - winners: {comp_str}")
+
+    out_md.write_text("\n".join(lines))
+    print(f"Wrote: {out_md}")
+    return out_md
+
+
+# ============= DELIVERABLE 06: Citation Source Map =============
+def build_citation_source_map():
+    out_md = ROOT / "06_citation_sources.md"
+
+    # Combine domain frequencies from both engines
+    perp = load_perplexity()
+    claude = load_claude()
+
+    combined_freq = Counter()
+    perp_freq = Counter()
+    claude_freq = Counter()
+
+    for q, results in perp.items():
+        seen = set()
+        for d, _, _ in results:
+            if d not in seen:
+                perp_freq[d] += 1
+                combined_freq[d] += 1
+                seen.add(d)
+
+    for q, results in claude.items():
+        seen = set()
+        for d, _, _ in results:
+            if d not in seen:
+                claude_freq[d] += 1
+                combined_freq[d] += 1
+                seen.add(d)
+
+    lines = [
+        "# Citation Source Map - 2026-04-23",
+        "",
+        "Where AI engines pull citations from when answering speaker-industry queries.",
+        "Combines Perplexity (31 queries) + Claude (27 queries) = 58 total query-engine pairs.",
+        "",
+        "## Why this matters",
+        "",
+        "Per Arel's AEO Strategy Section 8: 'AI doesn't just read our website. It reads what trusted sources say about us.' This map identifies the high-frequency citation domains — the outlets and platforms Talkadot needs presence on so AI engines learn the locked entity description from third-party sources, not just talkadot.com.",
+        "",
+        "## Top 30 citation sources across both engines",
+        "",
+        "| Rank | Domain | Total citations (of 58 queries) | Perp | Claude | Type | Action for Talkadot |",
+        "|---|---|---|---|---|---|---|",
+    ]
+
+    # Categorize
+    def categorize(domain):
+        if domain == CLIENT:
+            return "OWNED"
+        if any(domain == c or domain.endswith("." + c) for c in COMPETITORS):
+            return "COMPETITOR"
+        if domain in ("youtube.com", "facebook.com", "linkedin.com", "twitter.com", "x.com", "instagram.com", "reddit.com", "quora.com", "medium.com"):
+            return "SOCIAL/UGC"
+        if domain in ("g2.com", "capterra.com", "trustpilot.com", "softwareadvice.com", "getapp.com", "f6s.com", "crunchbase.com"):
+            return "DIRECTORY/REVIEW"
+        if domain in ("forbes.com", "inc.com", "fastcompany.com", "businessinsider.com", "techcrunch.com", "bizbash.com", "meetingsnet.com", "skift.com", "pcma.org"):
+            return "TIER-1 PRESS"
+        if "speakerflow" in domain or "thespeakerlab" in domain or "speakerhub" in domain or "nsaspeaker" in domain or "speakerlauncher" in domain or "letsengage" in domain:
+            return "SPEAKER INDUSTRY"
+        return "CONTENT/OTHER"
+
+    def action_for(domain, category):
+        if category == "OWNED":
+            return "Maintain — already cited; ensure entity description consistent"
+        if category == "COMPETITOR":
+            return "Monitor; build comparison page"
+        if category == "TIER-1 PRESS":
+            return "Pitch (Arel Section 8 earned media list)"
+        if category == "DIRECTORY/REVIEW":
+            return "Build profile + 20+ reviews (Arel Section 8 first-30-days list)"
+        if category == "SOCIAL/UGC":
+            return "Authentic participation only (Reddit/YouTube per Arel Section 8)"
+        if category == "SPEAKER INDUSTRY":
+            return "Guest content / contributor relationships"
+        return "Content partnership opportunity"
+
+    for i, (domain, total) in enumerate(combined_freq.most_common(30), 1):
+        cat = categorize(domain)
+        tag = ""
+        if domain == CLIENT:
+            tag = " **CLIENT**"
+        elif domain in COMPETITORS:
+            tag = f" *({COMPETITORS[domain]})*"
+        action = action_for(domain, cat)
+        lines.append(f"| {i} | {domain}{tag} | {total} | {perp_freq[domain]} | {claude_freq[domain]} | {cat} | {action} |")
+
+    # Group by category for action planning
+    lines += ["", "## Citation sources grouped by category (for outreach planning)", ""]
+    by_cat = defaultdict(list)
+    for domain, count in combined_freq.most_common(60):
+        by_cat[categorize(domain)].append((domain, count))
+
+    for cat in ["OWNED", "COMPETITOR", "TIER-1 PRESS", "DIRECTORY/REVIEW", "SPEAKER INDUSTRY", "SOCIAL/UGC", "CONTENT/OTHER"]:
+        if cat not in by_cat:
+            continue
+        lines.append(f"### {cat}")
+        lines.append("")
+        for domain, count in by_cat[cat][:10]:
+            lines.append(f"- `{domain}` ({count} citations)")
+        lines.append("")
+
+    lines += [
+        "## Cross-reference: Arel's Section 8 targets vs current AI citation reality",
+        "",
+        "From Arel AEO Strategy Section 8 (priority outreach targets):",
+        "",
+        "**Directory and review platform presence (first 30 days):**",
+        "",
+    ]
+    arel_directories = ["g2.com", "capterra.com", "getapp.com", "softwareadvice.com", "trustpilot.com", "producthunt.com", "crunchbase.com"]
+    for d in arel_directories:
+        cited = combined_freq.get(d, 0)
+        status = f"cited {cited}x in our scan" if cited else "NOT cited in our 58-query scan (build presence)"
+        lines.append(f"- `{d}` - {status}")
+    lines += ["", "**Earned media targets (Arel Section 8):**", ""]
+    arel_press = ["bizbash.com", "meetingsnet.com", "skift.com", "pcma.org", "tradeshownews.com", "eventmarketer.com", "inc.com", "entrepreneur.com", "fastcompany.com"]
+    for d in arel_press:
+        cited = combined_freq.get(d, 0)
+        status = f"cited {cited}x in our scan" if cited else "NOT cited in our 58-query scan (pitch with original data)"
+        lines.append(f"- `{d}` - {status}")
+
+    lines += [
+        "",
+        "## Strategic implications",
+        "",
+        "1. **Speaker industry sites (speakerflow, thespeakerlab, nsaspeaker, letsengage) appear frequently in Claude citations.** These are the relationships Talkadot should formalize via guest content and contributor partnerships (high citation impact, low cost).",
+        "2. **Tier-1 press (Forbes, Inc., trade pubs) appears in our Talkadot site extracts but NOT in our 58-query AI scan citations.** These are the data-driven story pitches Arel's Section 8 calls for. Talkadot's proprietary speaker data report (Pillar 2) is the wedge.",
+        "3. **Social/UGC dominates the citation graph (YouTube, LinkedIn, Quora, Reddit).** Authentic participation in r/eventplanning + question-titled YouTube videos = high-leverage AEO play.",
+        "4. **G2/Capterra absence is a critical gap.** Arel called out 20+ reviews in 60 days as the directory-presence target. Currently zero G2/Capterra citations in our scan = AI engines don't see Talkadot in trusted-software-review territory.",
+    ]
+
+    out_md.write_text("\n".join(lines))
+    print(f"Wrote: {out_md}")
+    return out_md
+
+
+if __name__ == "__main__":
+    build_keyword_opportunities()
+    build_gap_matrix()
+    build_citation_source_map()

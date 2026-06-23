@@ -1,0 +1,75 @@
+{
+  "skill_name": "aeo-checker",
+  "_note": "Eval corpus derived from a single client's content. Brand strings have been renamed for portability, but voice patterns may still reflect that origin. Deeper eval rewrite is a separate task.",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Check this blog post for AEO. Target query: 'what is answer engine optimization'. Post: 'Answer engine optimization has become increasingly important for B2B SaaS companies. In this post, we'll explore why AEO matters and how to implement it. Many companies are missing out on AI citations because they don't understand the fundamentals of how AI search works. We'll cover the key strategies...'",
+      "expected_output": "Should FAIL multiple checks. Check 1 (Definition Block) should FAIL because 'answer engine optimization has become increasingly important' is not a definition. Check 7 (Query Alignment) should FAIL because the opening talks about importance, not answering 'what is AEO'. Check 8 (Statistics) should FAIL because 'many companies' is not a statistic. Should identify at least 3 fails. Should list priority fixes in citation impact order. Should output READY FOR AEO INJECTION: YES for the fixable items.",
+      "assertions": [
+        "Identifies Check 1 (Definition Block) as FAIL",
+        "Identifies Check 7 (Query Alignment) as FAIL",
+        "Flags 'many companies' as a vague claim (not citable)",
+        "Lists priority fixes in citation impact order",
+        "Overall status is FAIL",
+        "Outputs insertion points for missing elements",
+        "Output includes READY FOR AEO INJECTION status"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Check this for AEO. Target query: 'best AEO agency for Series A SaaS'. Content is a landing page opening: 'Acme is the AI visibility agency for Series A B2B SaaS founders. Answer Engine Optimization (AEO) is the practice of structuring content with definitions, numbered steps, and FAQ blocks so AI models extract and cite it in generated answers. It differs from SEO in that AEO targets AI-generated answers rather than organic search rankings. According to the Princeton GEO study (KDD 2024), content with cited statistics receives 37% more AI citations than content without. We've run this for 12 Series A companies in the past 6 months...'",
+      "expected_output": "Should PASS Check 1 (Definition Block is clear and in first 300 words), PASS Check 6 (First-Person Authority: '12 Series A companies in the past 6 months'), PASS Check 8 (Statistics: Princeton GEO study cited with year and specific number). Should flag what's MISSING for a full page: FAQ block (Check 4), numbered process (Check 3), and assess query alignment. Overall status should be PARTIAL at most.",
+      "assertions": [
+        "Passes Check 1 — Definition Block (quotes the definition)",
+        "Passes Check 6 — First-Person Authority (quotes the 12 companies claim)",
+        "Passes Check 8 — Statistics (references Princeton GEO study)",
+        "Identifies FAQ block as missing",
+        "Identifies numbered process as missing",
+        "Overall status is PARTIAL (not FAIL, not full PASS)",
+        "Priority fixes listed"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Quick AEO check on this LinkedIn post. Target query: 'why SaaS companies invisible ChatGPT'. Post: '7 of the last 10 companies I audited scored a 0 on comparison queries — the exact queries their buyers use before booking a demo. They had SEO agencies. They had content teams. None of them appeared in Perplexity or ChatGPT when it mattered most. The reason isn't content volume. It's content structure. AI models don't cite discussion — they cite answers. A definition, a numbered process, a FAQ. That's what gets cited. What does your company score on its top 3 comparison queries?'",
+      "expected_output": "For LinkedIn format, should run the 3 LinkedIn checks only. Check 1 (Citable Claim): PASS — '7 of the last 10 companies' is specific and attributable. Check 2 (Query Alignment): PASS — post directly addresses why companies are invisible in AI search. Check 3 (No Forbidden Patterns): PASS — no vague mass claims, no keyword stuffing. Overall: PASS. Should note that LinkedIn checks are simpler than blog checks.",
+      "assertions": [
+        "Runs LinkedIn-specific checks (3 checks, not 9)",
+        "Passes Check 1 (Citable Claim) for the '7 of 10' stat",
+        "Passes Check 2 (Query Alignment)",
+        "Passes Check 3 (No Forbidden Patterns)",
+        "Overall status: PASS",
+        "Notes that LinkedIn format uses simplified checklist"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Run an AEO check on this but I didn't give you a target query yet. The article is about competitive displacement in AI search.",
+      "expected_output": "Should ask for the target query before running the check. The target query is required to assess query alignment of the opening paragraph (Check 7). Should prompt: 'What's the primary query this piece should rank for in AI search?' with an example.",
+      "assertions": [
+        "Asks for target query before running check",
+        "Does not run the check without a target query",
+        "Explains why the target query is needed (Check 7)",
+        "Provides an example of what a target query looks like"
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Check this article for AEO. Target query: 'how to build a query bank for AI search'. Article has these headings: 'Introduction', 'Why Query Banks Matter', 'The Process', 'Benefits', 'Getting Started', 'Conclusion'",
+      "expected_output": "Should FAIL Check 2 (Query-Matched Headings) because ALL headings are generic topic labels, not search queries. Should recommend specific rewrites for each heading. 'Introduction' → N/A or restructure. 'Why Query Banks Matter' → 'Why B2B SaaS Companies Need an AI Search Query Bank' or similar. 'The Process' → 'How to Build a Query Bank for AI Search Visibility'. 'Benefits' → 'How a Query Bank Improves AI Citation Rate'. Should also note inability to check other items without seeing full article content.",
+      "assertions": [
+        "Fails Check 2 (Query-Matched Headings) for all headings",
+        "Provides specific rewrites for each failing heading",
+        "Rewrites are in question/search query format",
+        "Notes that full check requires seeing article content",
+        "Does not hallucinate content that wasn't provided"
+      ],
+      "files": []
+    }
+  ]
+}

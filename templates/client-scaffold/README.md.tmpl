@@ -1,0 +1,37 @@
+# {{name}} Ops
+
+Visibility ops repo for **{{name}}**. Runs against the methodology repo at `../../aeo-os/`.
+
+## Structure
+
+Follows the canonical client folder structure (see [methodology decision record](../../aeo-os/docs/decisions/2026-05-15-client-folder-structure.md)).
+
+### Foundation
+- `config/` — ICP, brand brain, voice guide, pillars, keywords
+- `brand/` — visual identity, logos, brand kit
+
+### Brain
+- `research/` — one-time deep dives, competitor analysis, audience research
+- `intelligence/` — ongoing scans, weekly scorecards, gap reports (machine-written)
+- `vault/` — human-curated knowledge, Obsidian notes, swipe files
+
+### Brand (output)
+- `content/` — produced assets by channel (`linkedin/`, `email/`, `blog/`)
+- `production/` — larger productions (podcast, video, audits)
+
+### Cross-stage
+- `playbooks/` — client-specific reusable patterns
+- `ops/` — scheduled jobs, integrations, automations
+
+## Root files
+
+- `config.yaml` — quick-access machine-readable config
+- `CLAUDE.md` — agent identity + routing
+- `lessons.md` — client-specific learnings (compounds over time)
+
+## Getting started
+
+1. Open `./{{slug}}.code-workspace` in VS Code (combines this repo + methodology; gitignored, machine-specific).
+2. Fill `config.yaml`, then run `/build-brand-brain`.
+3. Populate remaining `config/*` files.
+4. Add brand assets to `brand/`.

@@ -1,0 +1,34 @@
+# Acme Analytics — Seed Keywords (DEMO)
+#
+# Fictional demo keywords grouped by pillar. These seed the query bank, AEO audits,
+# and topic generation. Replace with your own.
+
+pillars:
+  self_serve:
+    name: "Self-Serve Analytics"
+    keywords:
+      - "self-serve product analytics"
+      - "product analytics without SQL"
+      - "analytics for product managers"
+      - "best self-serve analytics tools"
+  why_not_what:
+    name: "Why Not What"
+    keywords:
+      - "why do users churn"
+      - "behavioral product analytics"
+      - "retention analysis tools"
+      - "how to understand user behavior"
+  pricing:
+    name: "Pricing & Predictability"
+    keywords:
+      - "product analytics pricing"
+      - "Amplitude alternatives"
+      - "Mixpanel pricing"
+      - "best product analytics tools for B2B SaaS"
+  migration:
+    name: "Instrumentation & Migration"
+    keywords:
+      - "product analytics migration"
+      - "event tracking setup guide"
+      - "Amplitude vs Mixpanel"
+      - "PostHog integration"

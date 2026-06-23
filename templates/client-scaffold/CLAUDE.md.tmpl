@@ -1,0 +1,24 @@
+# {{name}} — Client Routing
+
+This is the **{{name}}** client repo. It rides on the methodology at `../../aeo-os/`.
+
+## Active client
+
+When Claude Code runs in this directory, the active client is `{{slug}}`. Set:
+
+    CLIENT_CONFIG=./config.yaml
+
+(or pass `client_config_path` explicitly to skills/agents that accept it).
+
+## Routing
+
+- All methodology — agents, skills, commands, templates — lives in `../../aeo-os/`.
+- Read `../../aeo-os/CLAUDE.md` for the global routing table.
+- Read `../../aeo-os/lessons.md` AND this repo's `./lessons.md` before generating any content.
+
+## Critical rules
+
+- ALWAYS read `./config.yaml`, `./config/voice-guide.md`, and `./config/brand-brain.md` before generating content.
+- NEVER use phrases listed under `voice.never_say` in `config.yaml`.
+- Outputs land in `./content/`, `./production/`, `./research/`, or `./intelligence/` per the canonical structure.
+- After any correction: write a rule in `./lessons.md`.

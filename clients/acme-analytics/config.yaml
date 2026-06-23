@@ -1,0 +1,81 @@
+# Acme Analytics — DEMO client config
+#
+# This is a fictional B2B SaaS company used to demonstrate the toolkit out of the
+# box. Nothing here is real. Replace this directory with your own client (run
+# /clone-ops) — or edit these files in place to point the system at your brand.
+
+brand:
+  slug: acme-analytics
+  name: "Acme Analytics"
+  url: "https://acme-analytics.example.com"
+  one_liner: "Product analytics that answers 'why', not just 'what', for B2B SaaS teams."
+  founder: "Jordan Rivera"
+
+icp:
+  primary_role: "Head of Product / Senior PM at a B2B SaaS company"
+  company_stage: "Series A to Series C (50-500 employees)"
+  pain_points:
+    - "Dashboards show what happened but never why users churned"
+    - "Data team is a bottleneck for every product question"
+    - "Existing analytics tools are priced per-event and bills are unpredictable"
+    - "PMs ship features blind because instrumentation is incomplete"
+
+positioning:
+  category: "Product analytics"
+  contrarian_pov: >
+    Most product analytics tools optimize for dashboards executives glance at once a
+    quarter. The job that actually matters is answering the next product question in
+    minutes, without filing a ticket to the data team. Acme treats every PM as the
+    analyst.
+
+voice:
+  never_say:
+    - "leverage"
+    - "seamless"
+    - "robust"
+    - "game-changer"
+    - "unlock"
+    - "in today's fast-paced world"
+  always_say:
+    - "answer the next question"
+    - "why, not just what"
+    - "ship with evidence"
+
+offers:
+  - name: "Free tier"
+    detail: "Up to 1M events/month, full feature access, no credit card."
+  - name: "Team"
+    detail: "Flat per-seat pricing, unlimited events, self-serve."
+
+visual_style:
+  colors:
+    primary: "#0B5FFF"
+    accent: "#00C2A8"
+    bg: "#0E1116"
+    text: "#FFFFFF"
+  brand_font: "Inter"
+  logos: {}
+  brand_prompt_rules: "Clean, technical, data-forward. No stock-photo people. Charts over decoration."
+
+content:
+  channels:
+    linkedin: true
+    email: true
+    blog: true
+    youtube: false
+
+query_audit:
+  platforms:
+    - chatgpt
+    - claude
+    - perplexity
+    - gemini
+  competitors:
+    - "Amplitude"
+    - "Mixpanel"
+    - "Heap"
+    - "PostHog"
+  categories:
+    - "product analytics"
+    - "self-serve analytics"
+    - "product analytics for B2B SaaS"

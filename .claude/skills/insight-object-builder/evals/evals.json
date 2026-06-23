@@ -1,0 +1,80 @@
+{
+  "skill_name": "insight-object-builder",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Build an Insight Object from this selected insight. Source: call-notes. Raw text: 'Three CEOs in March 2026 didn't know the difference between AEO and GEO. None of them had heard both terms together. Their marketing teams hadn't either.'",
+      "expected_output": "Should produce a complete 6-field Insight Object. Field 1: compress to one specific sentence about the three CEOs. Field 2: consequence for Series A CEO — something about budget misallocation or wrong optimization target. Field 3: map to a query like 'AEO vs GEO what is the difference' in solution-aware or category-leadership category. Field 4: story-moment hook type (came from specific calls). Field 5: '3 CEOs in March 2026' as the evidence, quality: strong (number + context + time). Field 6: LinkedIn post recommended (story moment + education query). Should flag this as a NEW query to add to the query bank.",
+      "assertions": [
+        "Field 1 is one sentence with specific reference to three CEOs and March 2026",
+        "Field 2 names a specific ICP role and specific consequence",
+        "Field 3 maps to an AEO vs GEO comparison or solution-aware query",
+        "Field 4 identifies hook type as story-moment",
+        "Field 5 quotes 'three CEOs in March 2026' as the evidence",
+        "Field 5 assesses evidence quality as strong",
+        "Field 6 recommends LinkedIn post",
+        "Output flags query as NEW if not in tracked bank",
+        "Output includes Notion row creation status"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Build an Insight Object. Raw insight: 'Companies that publish more content are actually seeing lower citation rates than companies that publish less but structure every piece for AEO.' Source: audit-delta.",
+      "expected_output": "Should push back on Field 5 (evidence). The raw insight has no specific numbers — 'companies that publish more' is not specific. Should output EVIDENCE WEAK flag with options A, B, C. Should still complete Fields 1-4 and 6 based on what's available, but Field 5 should clearly be flagged as weak and the insight object should be marked INCOMPLETE until evidence is provided or user chooses an option.",
+      "assertions": [
+        "Flags Field 5 as WEAK",
+        "Asks for specifics: how many companies, which month, what citation rates",
+        "Provides options A, B, C for resolving weak evidence",
+        "Does not invent specific numbers",
+        "Marks insight object status as INCOMPLETE or flags that it needs evidence before writing",
+        "Still completes other fields based on available information"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Structure this insight: 'Perplexity now cites our client Acme SaaS for the query best RevOps tools for Series A and they were invisible on that query 6 weeks ago. We restructured one page with an AEO definition block and FAQ section.' Source: audit-delta.",
+      "expected_output": "Should produce a high-quality complete Insight Object. Field 1: 'Perplexity now cites Acme SaaS for [query] after one AEO-structured page was published 6 weeks ago.' Field 2: For a Series A CEO investing in content, this means one properly structured page can displace a competitor on their most important comparison query. Field 3: comparison query about RevOps tools. Field 4: specific-observation hook type, connects to POV about structure beating volume. Field 5: strong evidence — named company, named query, named mechanism (AEO blocks + FAQ), time reference (6 weeks). Field 6: LinkedIn post — strong evidence, comparison query, direct pipeline potential. Should be marked COMPLETE.",
+      "assertions": [
+        "Field 1 is specific — names Acme SaaS, the query, and the mechanism",
+        "Field 2 frames consequence from ICP perspective",
+        "Field 3 maps to a comparison-category query",
+        "Field 4 uses specific-observation hook type",
+        "Field 5 rates evidence as STRONG",
+        "Field 6 recommends LinkedIn post",
+        "Status: COMPLETE",
+        "Identifies as connecting to POV about structure vs volume"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Build an insight object from: 'and then there was also that thing about how most companies don't think about AI search and I've been meaning to write about content quality vs quantity for a while'",
+      "expected_output": "Should push back on Field 1. This is two vague observations strung together with no specific evidence. Should not accept this as a valid insight. Should ask: 'What specific thing happened — a call, an audit finding, a Perplexity result you saw — that makes you want to write about this? I need a specific observation with evidence before building an Insight Object.'",
+      "assertions": [
+        "Does not accept the vague observation as a valid insight",
+        "Does not produce a complete Insight Object from this input",
+        "Asks for a specific observation with evidence",
+        "Explains that 'content quality vs quantity' without evidence produces generic content",
+        "Offers to help capture a specific insight"
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Complete Insight Object: Here's my insight — 'I changed my mind about AEO timelines. I assumed it would take 90+ days to see citation improvements. But we saw our first Perplexity citations for a client appear in 18 days after restructuring 4 pages.' Source: manual observation.",
+      "expected_output": "Should produce a strong complete object. Field 1: 'First Perplexity citations appeared in 18 days after restructuring 4 pages — faster than the 90-day assumption.' Field 2: For a CEO evaluating whether to invest in AEO now or wait, this means results can appear before the next quarter review. Field 3: solution-aware query like 'how long does it take to see AEO results' or 'AEO timeline for B2B SaaS'. Field 4: surprising-data hook type (18 days vs 90-day assumption). Field 5: strong — 18 days, 4 pages, specific outcome (first Perplexity citations), comparison to prior assumption. Field 6: LinkedIn post. Should flag the query as likely NEW.",
+      "assertions": [
+        "Field 1 captures both the outcome (18 days) and the contrast (90-day assumption)",
+        "Field 2 frames for decision-making context of a CEO",
+        "Field 4 uses surprising-data hook type",
+        "Field 5 rates as STRONG",
+        "Field 3 maps to a timeline or results query",
+        "Status: COMPLETE",
+        "Does not invent additional details beyond what was provided"
+      ],
+      "files": []
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "skill_name": "linkedin-post-writer",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Write a LinkedIn post about this: In 7 of the last 10 prospect audits I ran, the company scored a 0 on every comparison query their buyers use before booking a demo. They had SEO agencies. They had content teams. None of them appeared in Perplexity or ChatGPT when it mattered most.",
+      "expected_output": "Should produce a complete LinkedIn post using the Specific Observation hook type. Should include the '7 of 10' stat as the hook or in the insight section. Should not start with 'I'. Should be 200-350 words. Should include an implication about buyers making shortlist decisions before demos. Should map to a comparison-category query. Should include word count and quality gate output.",
+      "assertions": [
+        "Post does not start with 'I'",
+        "Contains the '7 of 10' or '7 of the last 10' data point",
+        "Hook passes the remove-author-name specificity test",
+        "Word count is between 150 and 400",
+        "Includes an implication section",
+        "No forbidden words present",
+        "Output includes word count and quality gate status",
+        "Output identifies query mapped to"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Write me a LinkedIn post. My insight this week is that most SaaS companies don't know the difference between AEO and GEO and it came up three times on calls this month.",
+      "expected_output": "Should use the Story Moment hook type (three calls). Should name the specific context (three calls this month). Should explain the difference between AEO and GEO in the insight section. Should include an implication about why this gap matters to an ICP. Should be under 400 words. Should not include 'What do you think?' or generic CTAs.",
+      "assertions": [
+        "Uses a specific hook (three calls, not 'many people')",
+        "Explains the AEO vs GEO distinction in the insight",
+        "Does not use forbidden words",
+        "Does not end with 'What do you think?' or equivalent",
+        "Word count between 150 and 400",
+        "Identifies hook type in output",
+        "Quality gate shows PASS or PASS WITH FIXES"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Turn this into a LinkedIn post: Publishing more content is making your AI visibility problem worse. AI models don't cite volume — they cite structure. A page with a definition block, numbered steps, and FAQ beats 50 blog posts that discuss the topic generally.",
+      "expected_output": "Should use the Contrarian Claim hook type since the insight is a disagreement with conventional wisdom. The hook should be the contrarian claim itself. Insight should explain WHY structure beats volume for AI citation. Should include specific evidence or example. Should not be a simple restatement of the input — should add structure and voice.",
+      "assertions": [
+        "Uses Contrarian Claim hook type",
+        "Hook does not start with 'I'",
+        "Insight section expands on WHY structure beats volume",
+        "Includes specific evidence (definition block, numbered steps, FAQ mentioned)",
+        "Does not simply restate the input verbatim",
+        "Word count between 150 and 400",
+        "Quality gate output present"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "I need a LinkedIn post about how founder-led content gets cited by AI more than corporate content.",
+      "expected_output": "Should ask for evidence or a specific observation before writing. The prompt has no specific data point, no Insight Object, and no context file. Should not write a generic thought leadership post about this topic. Should request: what specific evidence does the founder have for this claim? How many examples? Any specific platform data?",
+      "assertions": [
+        "Requests specific evidence before writing",
+        "Does not produce a generic thought leadership post",
+        "Asks for a data point or specific observation",
+        "Does not start writing based on the generic claim alone"
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Write a LinkedIn post about how we moved a client from 0 to 8 AI citations in 60 days. They were a RevOps SaaS, Series A, competing against 3 well-funded competitors. We restructured 6 pages with AEO blocks and built a query bank. After 60 days they appeared in 8 of 10 comparison queries we were tracking.",
+      "expected_output": "Should use Specific Observation or Story Moment hook type. Should lead with the 0-to-8 transformation or the 60-day timeline as the hook. Should name the specific mechanism (AEO blocks, query bank) in the insight. Should include an implication about what this means for the reader's own situation. Should feel like a case study, not a pitch.",
+      "assertions": [
+        "Hook leads with '0 to 8' or the 60-day outcome",
+        "Does not start with 'I'",
+        "Names specific mechanisms: AEO blocks, query bank",
+        "Names the company type: RevOps SaaS",
+        "Includes clear implication for the reader",
+        "Does not read like a sales pitch",
+        "Word count between 150 and 400",
+        "Quality gate PASS"
+      ],
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "Can you write a quick LinkedIn post about how important AI SEO is for SaaS companies in 2026?",
+      "expected_output": "Should decline to write this as stated. 'How important AI SEO is' is a generic thought leadership topic with no specific insight, no evidence, and no founder observation. Should ask: What specific thing happened this week that makes you want to post about this? What data do you have? What did you observe in an audit or on a call? Direct the user to capture a specific insight first.",
+      "assertions": [
+        "Does not write a generic 'importance of AI SEO' post",
+        "Asks for a specific observation or evidence",
+        "Explains why the generic framing won't produce a citable post",
+        "Suggests the user run insight-scorer or capture a specific insight"
+      ],
+      "files": []
+    }
+  ]
+}

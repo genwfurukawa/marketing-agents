@@ -1,0 +1,75 @@
+{
+  "skill_name": "insight-scorer",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Score these insights and pick the best one for a LinkedIn post this week:\n1. AI search is becoming more important for B2B companies\n2. 7 of the last 10 companies I audited scored a 0 on comparison queries — the exact queries buyers use before booking a demo\n3. I've been thinking a lot about founder voice and how it affects content quality\n4. Perplexity now cites our client Acme (RevOps SaaS) for the query 'best RevOps tools for Series A' — they weren't there 4 weeks ago, and we restructured one page",
+      "expected_output": "Should score all 4 candidates. Insight 1 should score lowest (Q:1, D:0, E:0 — generic, no evidence). Insight 3 should also score low (vague, no evidence). Insights 2 and 4 should score highest. Insight 4 may actually win because it has Q:2 (comparison query), D:2 (proves core POV), E:2 (named company, named query, named outcome, time reference). Insight 2 is also strong. Should select the highest scorer, show all 4 ranked with justifications, and recommend passing to insight-object-builder.",
+      "assertions": [
+        "Scores all 4 candidates",
+        "Insight 1 scores lowest (0 or near-0 for E and D)",
+        "Insight 4 scores at least 7/8",
+        "Insight 4 gets Q:2 for mapping to comparison query",
+        "Selected insight has total score of 5 or above",
+        "Output includes human override option",
+        "Recommends passing to insight-object-builder"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Score this insight for content: 'I changed my mind about content volume. I used to think posting 5 times a week built authority faster. After tracking citation rates for 3 months across 6 clients, I can see that 2 well-structured posts per week consistently outperforms 5 unstructured posts in citation rate. The data is clear.'",
+      "expected_output": "Should score this highly: Q:2 (maps to solution-aware or comparison queries about AEO strategy), D:2 (contradicts conventional content volume advice — connects to POV 2 about structure beating volume), E:2 (3 months of tracking, 6 clients, specific outcome described), R:2 (assume not recently covered). Total should be 7 or 8/8. Should identify this as ready for insight-object-builder with a contrarian-claim hook type recommended.",
+      "assertions": [
+        "Scores the insight 7 or 8 out of 8",
+        "Identifies D (Distinctiveness) as high because it contradicts conventional wisdom",
+        "Identifies E (Evidence Quality) as 2 — 3 months, 6 clients, specific finding",
+        "Identifies Q (Query Alignment) as 1 or 2",
+        "Recommends Contrarian Claim hook type",
+        "Flags as SELECTED and ready for insight-object-builder"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "What should I write about this week?",
+      "expected_output": "Should ask for insight candidates before scoring anything. Should not generate a topic suggestion. Should explain that it needs either the Insight Log (via Notion MCP) or pasted observations. Should provide the 4 capture prompts if the log is empty.",
+      "assertions": [
+        "Does not suggest a topic without insight candidates",
+        "Asks for insight candidates first",
+        "Offers to pull from Notion via MCP or accept pasted observations",
+        "Provides the 4 capture prompts for unblocking",
+        "Does not invent an insight"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Score these for me:\n1. SEO is still important\n2. Companies need to think about AI\n3. Marketing is changing in 2026",
+      "expected_output": "All three should score below 5. Should trigger the LOW QUALITY failure condition. Should explain why each scores low (all E:0 — no evidence; all D:0 — generic, matches what everyone says; Q likely 0 or 1). Should offer the 3 options: override, strengthen, or capture new. Should NOT proceed to insight-object-builder.",
+      "assertions": [
+        "All candidates score below 5",
+        "Triggers LOW QUALITY failure condition",
+        "Explains why each scores low (no evidence, generic)",
+        "Does not proceed to insight-object-builder",
+        "Offers options A, B, C for unblocking",
+        "Does not invent a better insight"
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "I had three calls this week. On all three, the CEO asked me what the difference between AEO and GEO is. None of them knew. Score this as an insight.",
+      "expected_output": "Should score well but not perfectly. Q:2 (maps to 'AEO vs GEO what is the difference' — a solution-aware query with high citation potential). D:1 or 2 (connects to POV about category education, founders not knowing the terminology). E:2 (three calls, this week, specific pattern with named evidence). R:2 (assume not recently covered). Total: 6-7/8. Should recommend Story Moment hook type since it came from specific call interactions. Should note this also represents a new query to add to the query bank.",
+      "assertions": [
+        "Scores 6 or 7 out of 8",
+        "Identifies E as 2 (three calls, specific week, named pattern)",
+        "Recommends Story Moment hook type",
+        "Notes this represents a new query worth adding to the query bank",
+        "Flags as SELECTED",
+        "Recommends passing to insight-object-builder with SOURCE: call-notes"
+      ],
+      "files": []
+    }
+  ]
+}

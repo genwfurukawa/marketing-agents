@@ -1,0 +1,79 @@
+{
+  "skill_name": "voice-validator",
+  "_note": "Eval corpus derived from a single client's content. Brand strings have been renamed for portability, but voice patterns may still reflect that origin. Deeper eval rewrite is a separate task.",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Voice check this LinkedIn post: 'I wanted to leverage this opportunity to share some thoughts on how AI search is transforming the B2B SaaS landscape. In today's cutting-edge digital environment, companies that fail to utilize innovative AEO strategies will find themselves at a disadvantage. What do you think about AI search optimization?'",
+      "expected_output": "Should FAIL multiple checks. Check 1 (starts with I): FAIL. Check 7 (forbidden words): FAIL — leverage, cutting-edge, utilize, innovative all present. Should auto-fix the forbidden words. Check 8 (engagement bait): FAIL — 'What do you think?' should be removed. Check 2 (hook specificity): FAIL — hook is generic thought leadership. Should flag Check 2 for human review (not auto-fixable). Should output FAIL overall with corrected draft showing auto-fixes applied and human-review flags marked.",
+      "assertions": [
+        "Fails Check 1 — starts with 'I'",
+        "Fails Check 7 — identifies all 4 forbidden words: leverage, cutting-edge, utilize, innovative",
+        "Fails Check 8 — removes 'What do you think?'",
+        "Flags Check 2 for human review (generic hook needs new specific observation)",
+        "Auto-fixes the forbidden word replacements",
+        "Overall status: FAIL",
+        "Outputs corrected draft with REVIEW markers",
+        "Lists each auto-fix made"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Check this LinkedIn post: '7 of the last 10 companies I audited scored a 0 on comparison queries — the exact queries their buyers use before booking a demo. They had SEO agencies. Content teams. Consistent publishing schedules. None of them appeared when it mattered. The reason: content structure. AI models don't cite discussion. They cite answers. A definition, a numbered process, a FAQ block. That's what gets extracted. What does your company score on its top 3 comparison queries?'",
+      "expected_output": "Should PASS most checks. Does not start with I (starts with 7). Hook is specific (7 of 10 is a specific observation). No forbidden words. CTA is a specific question (asking about their company's score — not engagement bait). Word count check should pass. Minor check: is 'that's what gets extracted' ending before the CTA strong enough? Overall should be PASS or PASS WITH minor notes. Should not flag anything for major human review.",
+      "assertions": [
+        "Passes Check 1 — does not start with I",
+        "Passes Check 2 — hook is specific (7 of 10 companies)",
+        "Passes Check 7 — no forbidden words",
+        "Passes Check 6 — CTA is a specific question about their company's score",
+        "Overall status: PASS or PASS WITH AUTO-FIXES (minor)",
+        "Word count noted and within range",
+        "Does not flag the hook for human review"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Voice check this newsletter: 'Welcome back to the Acme newsletter! In this week's edition, we have some exciting updates. First, let's talk about AEO. Also, we want to mention that our new LinkedIn post is live. And finally, here are 5 tips for content marketing. 1. Post consistently. 2. Know your audience. 3. Use good visuals. 4. Track results. 5. Engage with comments. That's all for this week!'",
+      "expected_output": "Should FAIL multiple checks. Check 1 (single topic): FAIL — newsletter has 3+ topics (AEO, LinkedIn post, 5 tips). Check 3 (newsletter-speak): FAIL — 'Welcome back to the Acme newsletter', 'In this week's edition', 'That's all for this week!' should all be removed. The 5 generic tips ('Post consistently', 'Know your audience', etc.) are also weak content but content quality is not in scope — only the structural violations. Overall: FAIL.",
+      "assertions": [
+        "Fails Check 1 — multiple topics identified",
+        "Fails Check 3 — identifies all 3 newsletter-speak phrases",
+        "Auto-removes newsletter-speak phrases",
+        "Notes that content should focus on single topic",
+        "Does not comment on quality of the 5 tips (out of scope)",
+        "Overall status: FAIL",
+        "Suggests removing sections to return to single topic"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Check this blog post opening: 'In today's rapidly evolving B2B SaaS landscape, companies face unprecedented challenges in achieving visibility. This comprehensive guide will explore the multifaceted aspects of answer engine optimization and provide actionable insights for marketing teams looking to leverage AI search opportunities.' Format: blog-post.",
+      "expected_output": "Should fail Check 1 (indirect opening), Check 4 (forbidden words — leverage, comprehensive, actionable, multifaceted all present), and Check 2 (passive voice tendencies). Should auto-fix forbidden words. Should flag opening directness for human review (needs target query to rewrite properly). Should note specific words replaced. Overall FAIL or NEEDS HUMAN REVIEW.",
+      "assertions": [
+        "Fails Check 1 — indirect opening flagged for human review",
+        "Identifies forbidden words: leverage, actionable, comprehensive (if in list)",
+        "Auto-fixes forbidden words",
+        "Flags opening directness as needing human attention (cannot auto-fix without target query)",
+        "Notes that Check 1 fix requires knowing the target query",
+        "Overall status: FAIL"
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Run a voice check but don't tell me the format type.",
+      "expected_output": "Should ask for the format type before running. Should not guess or run a generic check. Should explain that the checklist is different for LinkedIn, blog, and newsletter formats. Should ask clearly: 'What format is this? linkedin-post | blog-post | newsletter | video-outline | carousel'",
+      "assertions": [
+        "Asks for format type before running",
+        "Does not run a generic check",
+        "Lists the format type options",
+        "Explains why format type matters",
+        "Does not make assumptions about the format"
+      ],
+      "files": []
+    }
+  ]
+}

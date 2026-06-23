@@ -1,0 +1,193 @@
+#!/usr/bin/env python3
+"""Analyze Perplexity batch results for Talkadot AEO audit.
+
+Parses 03_citation_scan/perplexity/batch-results.json (31 queries x 10 results)
+to compute:
+  - Talkadot presence (in how many queries, avg position, top position)
+  - Competitor presence (5 locked competitors + auto-detect top 20 domains)
+  - Per-query domain ranking
+  - Domain frequency across all queries (the "who AI cites for our category")
+  - Content type clustering (bureau pages, content articles, directories, social)
+Outputs:
+  - 03_citation_scan/perplexity/analysis_summary.md (human-readable)
+  - 03_citation_scan/perplexity/citation_matrix.csv (per-query x per-domain)
+  - 03_citation_scan/perplexity/domain_frequency.csv (top domains overall)
+"""
+import csv
+import json
+from collections import Counter, defaultdict
+from pathlib import Path
+from urllib.parse import urlparse
+
+ROOT = Path("/Users/genfurukawa/talkadot/research/audits/2026-04-23")
+INPUT = ROOT / "03_citation_scan/perplexity/batch-results.json"
+OUT_DIR = ROOT / "03_citation_scan/perplexity"
+
+CLIENT_DOMAIN = "talkadot.com"
+LOCKED_COMPETITORS = {
+    "espeakers.com": "eSpeakers",
+    "speakerhub.com": "SpeakerHub",
+    "bigspeak.com": "BigSpeak",
+    "allamericanspeakers.com": "AAE Speakers",
+    "bark.com": "Bark.com",
+}
+TRACKED_DOMAINS = {CLIENT_DOMAIN: "Talkadot", **LOCKED_COMPETITORS}
+
+
+def normalize_domain(d: str) -> str:
+    """Strip www. and lowercase."""
+    if not d:
+        return ""
+    d = d.lower().strip()
+    if d.startswith("www."):
+        d = d[4:]
+    return d
+
+
+def main():
+    with open(INPUT) as f:
+        queries = json.load(f)
+
+    # Per-query domain mapping
+    per_query_domains = []  # list of {query, domains_with_position}
+    domain_freq = Counter()
+    domain_first_position = defaultdict(list)
+    tracked_appearances = {d: [] for d in TRACKED_DOMAINS}  # domain -> list of (query, position)
+
+    for q in queries:
+        query = q["query"]
+        results = q.get("results", [])
+        per_query = {"query": query, "domains": []}
+        for r in results:
+            domain = normalize_domain(r.get("domain", ""))
+            position = r.get("position", -1)
+            if not domain:
+                continue
+            per_query["domains"].append({"domain": domain, "position": position, "url": r.get("url", "")})
+            domain_freq[domain] += 1
+            domain_first_position[domain].append(position)
+            for tracked in TRACKED_DOMAINS:
+                if domain == tracked or domain.endswith("." + tracked):
+                    tracked_appearances[tracked].append((query, position, r.get("url", "")))
+        per_query_domains.append(per_query)
+
+    # Domain frequency CSV (top 50)
+    freq_csv = OUT_DIR / "domain_frequency.csv"
+    with open(freq_csv, "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["domain", "appearances", "avg_position", "min_position", "max_position", "is_locked_competitor", "is_client"])
+        for domain, count in domain_freq.most_common(50):
+            positions = domain_first_position[domain]
+            avg_pos = sum(positions) / len(positions)
+            w.writerow([
+                domain,
+                count,
+                round(avg_pos, 2),
+                min(positions),
+                max(positions),
+                domain in LOCKED_COMPETITORS,
+                domain == CLIENT_DOMAIN,
+            ])
+
+    # Citation matrix CSV — per query, mark which tracked domain appears at what position
+    matrix_csv = OUT_DIR / "citation_matrix.csv"
+    with open(matrix_csv, "w", newline="") as f:
+        w = csv.writer(f)
+        header = ["query"] + [TRACKED_DOMAINS[d] for d in TRACKED_DOMAINS]
+        w.writerow(header)
+        for pq in per_query_domains:
+            row = [pq["query"]]
+            for tracked in TRACKED_DOMAINS:
+                positions_in_query = [d["position"] for d in pq["domains"] if d["domain"] == tracked or d["domain"].endswith("." + tracked)]
+                row.append(positions_in_query[0] if positions_in_query else "ABSENT")
+            w.writerow(row)
+
+    # Summary markdown
+    summary = OUT_DIR / "analysis_summary.md"
+    with open(summary, "w") as f:
+        f.write(f"# Perplexity Citation Scan Analysis - 2026-04-23\n\n")
+        f.write(f"**Source:** Perplexity Search API via scripts/aeo_audit/aeo_audit.py\n")
+        f.write(f"**Queries scanned:** {len(queries)}\n")
+        f.write(f"**Total results captured:** {sum(len(q.get('results', [])) for q in queries)}\n\n")
+
+        f.write(f"## Headline finding\n\n")
+        talkadot_appearances = len(tracked_appearances[CLIENT_DOMAIN])
+        f.write(f"**Talkadot appears in {talkadot_appearances} of {len(queries)} queries' top-10 Perplexity results.**\n\n")
+        if talkadot_appearances:
+            ta_positions = [p for _, p, _ in tracked_appearances[CLIENT_DOMAIN]]
+            f.write(f"- Average position when present: {sum(ta_positions)/len(ta_positions):.1f}\n")
+            f.write(f"- Best position: {min(ta_positions)}\n")
+            f.write(f"- Worst position: {max(ta_positions)}\n\n")
+        f.write(f"---\n\n")
+
+        f.write(f"## Tracked domain appearances\n\n")
+        f.write(f"| Domain | Appearances (of {len(queries)} queries) | Coverage % | Avg position | Best position |\n")
+        f.write(f"|---|---|---|---|---|\n")
+        for tracked, label in TRACKED_DOMAINS.items():
+            apps = tracked_appearances[tracked]
+            n = len(apps)
+            pct = round(n * 100 / len(queries), 1)
+            if n:
+                positions = [p for _, p, _ in apps]
+                avg_p = round(sum(positions) / len(positions), 1)
+                best_p = min(positions)
+            else:
+                avg_p = best_p = "-"
+            tag = " (CLIENT)" if tracked == CLIENT_DOMAIN else ""
+            f.write(f"| {label}{tag} ({tracked}) | {n} | {pct}% | {avg_p} | {best_p} |\n")
+        f.write(f"\n")
+
+        f.write(f"## Top 30 domains by total appearances (the 'who AI cites' map)\n\n")
+        f.write(f"| Rank | Domain | Appearances | Avg position |\n")
+        f.write(f"|---|---|---|---|\n")
+        for i, (domain, count) in enumerate(domain_freq.most_common(30), 1):
+            positions = domain_first_position[domain]
+            avg_p = round(sum(positions)/len(positions), 1)
+            tag = ""
+            if domain == CLIENT_DOMAIN:
+                tag = " **CLIENT**"
+            elif domain in LOCKED_COMPETITORS:
+                tag = f" **{LOCKED_COMPETITORS[domain]}**"
+            f.write(f"| {i} | {domain}{tag} | {count} | {avg_p} |\n")
+        f.write(f"\n")
+
+        f.write(f"## Per-query winners (top 3 per query)\n\n")
+        for pq in per_query_domains:
+            f.write(f"### {pq['query']}\n")
+            top3 = sorted(pq['domains'], key=lambda x: x['position'])[:3]
+            for d in top3:
+                tag = ""
+                if d['domain'] == CLIENT_DOMAIN:
+                    tag = " **TALKADOT**"
+                elif d['domain'] in LOCKED_COMPETITORS:
+                    tag = f" **{LOCKED_COMPETITORS[d['domain']]}**"
+                f.write(f"- pos {d['position']}: {d['domain']}{tag} - {d['url'][:80]}\n")
+            f.write(f"\n")
+
+        f.write(f"## Talkadot appearances detail (where we ARE cited)\n\n")
+        if tracked_appearances[CLIENT_DOMAIN]:
+            for query, pos, url in tracked_appearances[CLIENT_DOMAIN]:
+                f.write(f"- pos {pos} | `{query}` | {url}\n")
+        else:
+            f.write(f"_Talkadot does not appear in any of the {len(queries)} queries' top-10 results. This is the gap to close._\n")
+        f.write(f"\n")
+
+        f.write(f"## Output files\n\n")
+        f.write(f"- `analysis_summary.md` (this file)\n")
+        f.write(f"- `citation_matrix.csv` (per-query x tracked-domain position grid)\n")
+        f.write(f"- `domain_frequency.csv` (top 50 domains across all queries)\n")
+        f.write(f"- `batch-results.json` (raw Perplexity API responses)\n")
+
+    print(f"Wrote: {summary}")
+    print(f"Wrote: {matrix_csv}")
+    print(f"Wrote: {freq_csv}")
+    print(f"\nTalkadot appears in {len(tracked_appearances[CLIENT_DOMAIN])} of {len(queries)} queries.")
+    print(f"\nTop tracked appearances:")
+    for tracked, label in TRACKED_DOMAINS.items():
+        n = len(tracked_appearances[tracked])
+        pct = round(n * 100 / len(queries), 1)
+        print(f"  {label:20} {n:3}/{len(queries)} ({pct}%)")
+
+
+if __name__ == "__main__":
+    main()

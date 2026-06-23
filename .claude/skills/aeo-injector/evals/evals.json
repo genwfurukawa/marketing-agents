@@ -1,0 +1,77 @@
+{
+  "skill_name": "aeo-injector",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Inject missing AEO elements. Target query: 'what is AEO for B2B SaaS'. AEO Report says: Check 1 FAIL (no definition in first 300 words, insertion point: after paragraph 1), Check 4 FAIL (no FAQ, insert before conclusion), all other checks PASS. Draft opening: 'Answer engine optimization is becoming increasingly important for B2B SaaS companies. In this guide we'll explain why and how to get started.'",
+      "expected_output": "Should inject exactly 2 elements. For Check 1: insert a definition block after paragraph 1 using the structure 'AEO is [definition]. It differs from SEO in that [distinction].' Definition must use natural language from the target query. For Check 4: generate a FAQ block with 7 Q&A pairs relevant to AEO for B2B SaaS. FAQ questions should sound like real buyer queries. All answers should start with direct answers. Should output INJECTIONS APPLIED: 2. Should mark each injection in the draft with an AEO INJECTION comment.",
+      "assertions": [
+        "Injects exactly 2 elements (definition + FAQ)",
+        "Does not inject elements that were marked PASS",
+        "Definition block uses target query language (AEO, B2B SaaS)",
+        "Definition has the required two-sentence structure",
+        "FAQ has 7+ Q&A pairs",
+        "FAQ questions are in natural buyer language",
+        "FAQ answers start with direct answers (not hedges)",
+        "Injection comments mark each insertion",
+        "Word count before and after noted"
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Inject. Target query: 'how to track AI search visibility for SaaS'. AEO Report: Check 2 FAIL (headings are generic: 'Introduction', 'The Process', 'Why It Matters', 'Conclusion'), Check 3 FAIL (no numbered process, insertion point: after 'The Process' section), all other checks PASS.",
+      "expected_output": "Should rewrite all 4 failing headings to query-format headings. 'Introduction' should be removed or replaced. 'The Process' → something like 'How to Track AI Search Visibility in 4 Steps'. 'Why It Matters' → 'Why B2B SaaS Companies Need AI Visibility Tracking'. 'Conclusion' → 'Next Steps for AI Search Monitoring'. For Check 3: acknowledge that the numbered process must be extracted from draft content, and since only headings were provided, should flag MANUAL REQUIRED for the numbered process section and provide the template.",
+      "assertions": [
+        "Rewrites all 4 failing headings to query-format headings",
+        "No rewritten heading starts with 'Introduction' or remains generic",
+        "At least one heading variation (not all 'How to')",
+        "Each rewritten heading is 5-12 words",
+        "Flags numbered process as MANUAL REQUIRED since draft content not provided",
+        "Provides numbered process template",
+        "Does not invent process steps from thin air"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Run aeo-injector on this draft. No AEO report provided.",
+      "expected_output": "Should ask for the AEO_REPORT before proceeding. Should not run aeo-checker internally as a workaround. Should explain that aeo-checker must be run first to identify which elements are missing and where insertion points are. Should not attempt to 'guess' what might be missing.",
+      "assertions": [
+        "Asks for AEO_REPORT before proceeding",
+        "Does not run aeo-checker internally",
+        "Does not attempt to guess missing elements",
+        "Explains why the AEO_REPORT is required",
+        "Directs user to run aeo-checker first"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Inject AEO elements. AEO Report says: ALL CHECKS PASSED. Target query: 'AEO vs SEO for B2B SaaS'.",
+      "expected_output": "Should output the original draft unchanged with a note that all checks passed. Should not inject anything. Should confirm the draft is ready for voice-validator.",
+      "assertions": [
+        "Returns original draft unchanged",
+        "States 'all checks passed, no injection needed'",
+        "Does not invent elements to inject",
+        "Confirms draft ready for next step (voice-validator)"
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Inject FAQ block. AEO Report: Check 4 FAIL. Target query: 'citation rate AEO metric for SaaS'. The article is about how to use citation rate as the primary metric for tracking AEO performance.",
+      "expected_output": "Should generate 7-10 FAQ Q&A pairs specifically about citation rate as an AEO metric. Questions should sound like real buyers: 'What is a good citation rate for a B2B SaaS company?', 'How often should I check my citation rate?', 'Can I improve citation rate without a domain authority increase?', etc. Answers should be 2-4 sentences each and self-contained. No answers should start with 'It depends' or hedge without a direct answer.",
+      "assertions": [
+        "Generates 7-10 FAQ pairs",
+        "Questions are in natural buyer language",
+        "Questions are specific to citation rate (not generic AEO questions)",
+        "All answers start with a direct response",
+        "No answer starts with 'It depends', 'Great question', or similar hedges",
+        "Each answer is self-contained (makes sense without reading the article)",
+        "Answers are 2-4 sentences each"
+      ],
+      "files": []
+    }
+  ]
+}

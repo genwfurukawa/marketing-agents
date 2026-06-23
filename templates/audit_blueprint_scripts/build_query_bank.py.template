@@ -1,0 +1,299 @@
+#!/usr/bin/env python3
+"""Build the Talkadot AEO query bank for the 2026-04-23 audit.
+
+V2 — 2026-04-23 — restructured per Arel Moodie's AEO Strategy doc (canonical):
+- Includes Arel's 20 baseline queries VERBATIM (these are the success metric)
+- Drops speaker-topic verticals (sales kickoff, healthcare, DEI) - explicitly out of scope per Section 5
+- Reduces speaker-side to ~5% (Pillar 5 weight)
+- Effective ICP weighting: ~95% planner / 5% speaker
+- Categories per Arel Section 5: Tier 1 (planner-side category), Tier 2 (planner-side comparison), Tier 3 (speaker-side easy wins)
+
+Produces: 02_query_bank.md, .csv, .json, _inputs/brand_radar_prompts.md
+"""
+import csv
+import json
+from pathlib import Path
+
+OUT = Path("/Users/genfurukawa/talkadot/research/audits/2026-04-23")
+CLIENT_DOMAIN = "talkadot.com"
+
+# Each query: text, side (planner/speaker), tier (1/2/3), category, intent, source, src_detail, baseline (Arel Section 10), notes
+QUERIES = [
+    # ===== AREL BASELINE — 20 success-metric queries (verbatim from AEO Strategy doc Section 10) =====
+    # Note: Q10 ("Talkadot vs [top competitor]") expanded to 5 specific competitor comparisons below.
+    {"q": "How do I find a keynote speaker for a corporate event?", "side": "planner", "tier": 1, "cat": "category", "intent": "decision", "src": "arel_baseline", "src_detail": "Arel Section 10 Q1", "baseline": True, "notes": "Source / discovery query. Highest planner intent."},
+    {"q": "Best tools for event planners to source speakers", "side": "planner", "tier": 1, "cat": "category", "intent": "consideration", "src": "arel_baseline", "src_detail": "Arel Section 10 Q2", "baseline": True, "notes": "Listicle / category query."},
+    {"q": "What is a speaker marketplace?", "side": "planner", "tier": 1, "cat": "category", "intent": "awareness", "src": "arel_baseline", "src_detail": "Arel Section 10 Q3", "baseline": True, "notes": "Definitional. Defines the category Talkadot wants to own."},
+    {"q": "How do I know if a speaker is any good before I book them?", "side": "planner", "tier": 1, "cat": "trust", "intent": "consideration", "src": "arel_baseline", "src_detail": "Arel Section 10 Q4", "baseline": True, "notes": "Vetting wedge — Talkadot's data-vs-testimonials POV."},
+    {"q": "Speaker bureau alternatives", "side": "planner", "tier": 1, "cat": "category", "intent": "decision", "src": "arel_baseline", "src_detail": "Arel Section 10 Q5", "baseline": True, "notes": "Anti-status-quo trigger."},
+    {"q": "Tools that use audience feedback to match speakers to events", "side": "planner", "tier": 1, "cat": "category", "intent": "consideration", "src": "arel_baseline", "src_detail": "Arel Section 10 Q6", "baseline": True, "notes": "Position-of-one query. Talkadot is the only platform that fits."},
+    {"q": "How much does a keynote speaker cost?", "side": "planner", "tier": 1, "cat": "problem", "intent": "consideration", "src": "arel_baseline", "src_detail": "Arel Section 10 Q7", "baseline": True, "notes": "Highest-volume planner pricing query."},
+    {"q": "What is Talkadot?", "side": "planner", "tier": 2, "cat": "brand", "intent": "awareness", "src": "arel_baseline", "src_detail": "Arel Section 10 Q8", "baseline": True, "notes": "Brand baseline. Must own own-name retrieval with locked entity description."},
+    {"q": "Talkadot reviews", "side": "planner", "tier": 2, "cat": "brand", "intent": "consideration", "src": "arel_baseline", "src_detail": "Arel Section 10 Q9", "baseline": True, "notes": "Brand trust signal. Drives directory presence (G2/Capterra/etc)."},
+    # Q10 expansion — Arel says "Talkadot vs [top competitor]". Per competitive analysis, SpeakerHub is closest strategic mirror.
+    # We expand to all 5 locked competitors. SpeakerHub flagged as canonical "top competitor."
+    {"q": "Talkadot vs SpeakerHub", "side": "planner", "tier": 2, "cat": "comparison", "intent": "decision", "src": "arel_baseline", "src_detail": "Arel Section 10 Q10 (canonical top competitor — closest strategic mirror)", "baseline": True, "notes": "Canonical comparison query. Strategic mirror."},
+    {"q": "Talkadot vs eSpeakers", "side": "planner", "tier": 2, "cat": "comparison", "intent": "decision", "src": "supplementary", "src_detail": "Arel Section 10 Q10 expanded — incumbent directory", "baseline": False, "notes": "Incumbent booking directory comparison."},
+    {"q": "Talkadot vs BigSpeak", "side": "planner", "tier": 2, "cat": "comparison", "intent": "decision", "src": "supplementary", "src_detail": "Arel Section 10 Q10 expanded — premium bureau", "baseline": False, "notes": "Premium bureau (the 'old guard' Talkadot positions against)."},
+    {"q": "Talkadot vs AAE Speakers", "side": "planner", "tier": 2, "cat": "comparison", "intent": "decision", "src": "supplementary", "src_detail": "Arel Section 10 Q10 expanded — largest US bureau", "baseline": False, "notes": "Largest US independent bureau."},
+    {"q": "Talkadot vs Bark.com", "side": "planner", "tier": 3, "cat": "comparison", "intent": "decision", "src": "supplementary", "src_detail": "Arel Section 10 Q10 expanded — long-tail self-serve", "baseline": False, "notes": "Horizontal marketplace comparison."},
+    {"q": "Best platforms for finding professional speakers", "side": "planner", "tier": 1, "cat": "category", "intent": "consideration", "src": "arel_baseline", "src_detail": "Arel Section 10 Q11", "baseline": True, "notes": "Listicle / discovery."},
+    {"q": "How to vet a professional speaker", "side": "planner", "tier": 1, "cat": "trust", "intent": "consideration", "src": "arel_baseline", "src_detail": "Arel Section 10 Q12", "baseline": True, "notes": "Vetting query — risk reduction Pillar 1."},
+    {"q": "Event planning tools for speaker sourcing", "side": "planner", "tier": 1, "cat": "category", "intent": "consideration", "src": "arel_baseline", "src_detail": "Arel Section 10 Q13", "baseline": True, "notes": "Tool category query."},
+    {"q": "Questions to ask before booking a speaker", "side": "planner", "tier": 1, "cat": "trust", "intent": "consideration", "src": "arel_baseline", "src_detail": "Arel Section 10 Q14", "baseline": True, "notes": "Risk reduction — buyer guide format."},
+    {"q": "ROI of hiring a professional keynote speaker", "side": "planner", "tier": 1, "cat": "problem", "intent": "consideration", "src": "arel_baseline", "src_detail": "Arel Section 10 Q15", "baseline": True, "notes": "ROI / business case — Pillar 1 risk reduction at the leadership-justification level."},
+    {"q": "How do speakers collect audience feedback?", "side": "speaker", "tier": 3, "cat": "problem", "intent": "consideration", "src": "arel_baseline", "src_detail": "Arel Section 10 Q16", "baseline": True, "notes": "Only speaker-side query in Arel's baseline. Easy win — Talkadot is direct answer."},
+    {"q": "Best event tech platforms 2026", "side": "planner", "tier": 1, "cat": "category", "intent": "consideration", "src": "arel_baseline", "src_detail": "Arel Section 10 Q17", "baseline": True, "notes": "Year-tagged category listicle. Freshness signal."},
+    {"q": "How to avoid a bad keynote speaker", "side": "planner", "tier": 1, "cat": "trust", "intent": "decision", "src": "arel_baseline", "src_detail": "Arel Section 10 Q18", "baseline": True, "notes": "Pure risk-reduction query. Pillar 1 archetype."},
+    {"q": "What data should I look at before booking a speaker?", "side": "planner", "tier": 1, "cat": "trust", "intent": "consideration", "src": "arel_baseline", "src_detail": "Arel Section 10 Q19", "baseline": True, "notes": "Wedge query — data-led vetting. Talkadot uniquely positioned."},
+    {"q": "Alternatives to traditional speaker bureaus", "side": "planner", "tier": 1, "cat": "category", "intent": "decision", "src": "arel_baseline", "src_detail": "Arel Section 10 Q20", "baseline": True, "notes": "Bureau-alternative anchor. Maps to Pillar 4 comparison."},
+
+    # ===== TIER 1/2 SUPPLEMENTARY — Planner-side category extensions =====
+    {"q": "Best speaker marketplaces 2026", "side": "planner", "tier": 2, "cat": "comparison", "intent": "consideration", "src": "supplementary", "src_detail": "Arel Section 5 Tier 2", "baseline": False, "notes": "Year-tagged marketplace listicle. From Arel Tier 2 list."},
+    {"q": "Speaker bureau vs speaker marketplace which should I use", "side": "planner", "tier": 1, "cat": "comparison", "intent": "decision", "src": "supplementary", "src_detail": "Arel Section 5 Tier 1", "baseline": False, "notes": "Decision-format query Arel called out in Tier 1. Talkadot's wedge."},
+    {"q": "How do I verify a speaker's audience feedback?", "side": "planner", "tier": 1, "cat": "trust", "intent": "decision", "src": "supplementary", "src_detail": "Arel Section 5 Tier 1", "baseline": False, "notes": "Direct audience-data verification query."},
+
+    # ===== DATA-LED / PILLAR 2 — original-data wedge queries =====
+    {"q": "Speaker performance data by topic", "side": "planner", "tier": 2, "cat": "trend", "intent": "awareness", "src": "data_led", "src_detail": "Pillar 2 — proprietary data positioning", "baseline": False, "notes": "Anchors Talkadot's 'we have performance data, bureaus have relationships' moat."},
+    {"q": "Speaker industry data and trends 2026", "side": "planner", "tier": 2, "cat": "trend", "intent": "awareness", "src": "data_led", "src_detail": "Pillar 2 — annual State of Industry framing", "baseline": False, "notes": "Anchors the annual State of the Speaker Industry report."},
+
+    # ===== TIER 3 — Speaker-side easy wins (5% allocation) =====
+    {"q": "How do speakers get booked", "side": "speaker", "tier": 3, "cat": "problem", "intent": "consideration", "src": "supplementary", "src_detail": "Arel Section 5 Tier 3", "baseline": False, "notes": "Speaker-side staple. Easy win."},
+    {"q": "How to get leads from speaking engagements", "side": "speaker", "tier": 3, "cat": "problem", "intent": "decision", "src": "supplementary", "src_detail": "Arel Section 5 Tier 3", "baseline": False, "notes": "Direct Talkadot product fit. QR-code lead capture."},
+]
+
+
+def write_csv():
+    p = OUT / "02_query_bank.csv"
+    with open(p, "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["query", "category", "client_domain"])
+        for q in QUERIES:
+            w.writerow([q["q"], q["cat"], CLIENT_DOMAIN])
+    return p
+
+
+def write_json():
+    p = OUT / "02_query_bank.json"
+    n_planner = sum(1 for q in QUERIES if q["side"] == "planner")
+    n_speaker = sum(1 for q in QUERIES if q["side"] == "speaker")
+    n_baseline = sum(1 for q in QUERIES if q.get("baseline"))
+    out = {
+        "client": "talkadot",
+        "client_domain": CLIENT_DOMAIN,
+        "audit_date": "2026-04-23",
+        "version": "v2 (rebuilt after Arel AEO Strategy doc)",
+        "ICP_split_target": "95% planner / 5% speaker",
+        "actual_split": {
+            "planner": n_planner,
+            "speaker": n_speaker,
+            "planner_pct": round(n_planner * 100 / len(QUERIES), 1),
+            "speaker_pct": round(n_speaker * 100 / len(QUERIES), 1),
+        },
+        "arel_baseline_count": n_baseline,
+        "arel_baseline_target": "20 (with Q10 expanded to 5 specific competitor comparisons)",
+        "total_queries": len(QUERIES),
+        "queries": QUERIES,
+    }
+    with open(p, "w") as f:
+        json.dump(out, f, indent=2)
+    return p
+
+
+def write_md():
+    p = OUT / "02_query_bank.md"
+    n_planner = sum(1 for q in QUERIES if q["side"] == "planner")
+    n_speaker = sum(1 for q in QUERIES if q["side"] == "speaker")
+    n_baseline = sum(1 for q in QUERIES if q.get("baseline"))
+    n_tier1 = sum(1 for q in QUERIES if q["tier"] == 1)
+    n_tier2 = sum(1 for q in QUERIES if q["tier"] == 2)
+    n_tier3 = sum(1 for q in QUERIES if q["tier"] == 3)
+
+    lines = [
+        "# Talkadot Query Bank — 2026-04-23 Audit (v2)",
+        "",
+        "Rebuilt after receiving Arel Moodie's AEO Strategy doc as canonical source of truth.",
+        "",
+        f"**Total queries:** {len(QUERIES)}",
+        f"**Arel baseline coverage:** {n_baseline} of 24 (Q10 expanded to 5 specific competitor comparisons)",
+        f"**ICP split (target 95% planner / 5% speaker):** Planner {n_planner} ({round(n_planner*100/len(QUERIES),1)}%) / Speaker {n_speaker} ({round(n_speaker*100/len(QUERIES),1)}%)",
+        f"**Tier distribution:** Tier 1 (planner category, top priority) {n_tier1} / Tier 2 (planner comparison) {n_tier2} / Tier 3 (speaker easy wins) {n_tier3}",
+        "",
+        "## North Star (Arel Section 14)",
+        "",
+        "> We are not trying to rank. We are trying to be the answer when an event planner asks AI how to find a great speaker.",
+        "",
+        "## Strategic frame",
+        "",
+        "**Game B (category-level queries) is the priority. Game A (brand-only) is a smaller field; brand queries come along for the ride.**",
+        "",
+        "All 20 of Arel's baseline queries are present verbatim (Q10 expanded to all 5 locked competitor comparisons for completeness, with SpeakerHub flagged as canonical 'top competitor' per competitive analysis).",
+        "",
+        "Queries supplementing Arel's baseline are restricted to:",
+        "- Tier 1/2 planner-side category extensions Arel called out in Section 5",
+        "- Data-led queries that anchor Pillar 2 (Talkadot original data) — the 'we have performance data, bureaus have relationships' moat",
+        "- Speaker-side Tier 3 easy wins (limited to 5% of bank per Pillar 5 weight)",
+        "",
+        "**Excluded (per Arel Section 5):**",
+        "- Speaker-topic queries ('best motivational speakers for sales kickoff', 'best DEI speakers for finance', vertical X for Y industry)",
+        "- Public speaking tips and coaching queries",
+        "- Generic event planning queries that do not involve speakers",
+        "- Engagement-tool framings (Slido, Mentimeter, AhaSlides) — out of category",
+        "",
+        "## Categories",
+        "",
+        "- **brand** — branded queries (Talkadot itself)",
+        "- **category** — category-defining queries (booking marketplace, speaker tools)",
+        "- **comparison** — head-to-head competitor or category comparison queries",
+        "- **problem** — problem-framed queries (how to / how much / why)",
+        "- **trust** — vetting / proof / evaluation queries (Pillar 1 archetype)",
+        "- **trend** — emerging / data-led framing queries (Pillar 2 archetype)",
+        "",
+        "## Tiers",
+        "",
+        "- **Tier 1** — Planner-side category queries (Arel's top priority). The 'becoming the answer' game.",
+        "- **Tier 2** — Planner-side comparison queries (brand and direct competitor framing).",
+        "- **Tier 3** — Speaker-side easy wins. Capped at 5% per Pillar 5 weight.",
+        "",
+        "## Sources",
+        "",
+        "- **arel_baseline** — Verbatim from Arel AEO Strategy doc Section 10 (the 20 success-metric queries)",
+        "- **supplementary** — Arel Section 5 Tier 1/2 list extensions",
+        "- **data_led** — Pillar 2 anchors for the proprietary-data wedge",
+        "",
+        "---",
+        "",
+        "## Arel baseline queries (Section 10 — the success metric)",
+        "",
+        "Talkadot must appear in **at least 8 of these 20 queries across at least 3 AI engines at 90 days**, and **at least 14 of 20 across all 5 engines at 180 days**.",
+        "",
+        "| # | Query | Tier | Category | Intent | Notes |",
+        "|---|-------|------|----------|--------|-------|",
+    ]
+    n = 0
+    for q in QUERIES:
+        if q.get("baseline"):
+            n += 1
+            lines.append(f"| {n} | {q['q']} | {q['tier']} | {q['cat']} | {q['intent']} | {q['notes']} |")
+
+    lines += [
+        "",
+        "## Supplementary planner-side queries (extensions of Arel's category framing)",
+        "",
+        "| # | Query | Tier | Category | Intent | Source | Notes |",
+        "|---|-------|------|----------|--------|--------|-------|",
+    ]
+    n = 0
+    for q in QUERIES:
+        if not q.get("baseline") and q["side"] == "planner":
+            n += 1
+            lines.append(f"| {n} | {q['q']} | {q['tier']} | {q['cat']} | {q['intent']} | {q['src']} ({q['src_detail']}) | {q['notes']} |")
+
+    lines += [
+        "",
+        "## Speaker-side queries (Tier 3, capped at 5% per Pillar 5)",
+        "",
+        "| # | Query | Tier | Category | Intent | Source | Notes |",
+        "|---|-------|------|----------|--------|--------|-------|",
+    ]
+    n = 0
+    for q in QUERIES:
+        if q["side"] == "speaker":
+            n += 1
+            lines.append(f"| {n} | {q['q']} | {q['tier']} | {q['cat']} | {q['intent']} | {q['src']} ({q['src_detail']}) | {q['notes']} |")
+
+    lines += [
+        "",
+        "---",
+        "",
+        "## Engine coverage plan",
+        "",
+        f"All {len(QUERIES)} queries scanned across:",
+        "- **Perplexity** (via scripts/aeo_audit/aeo_audit.py batch — full coverage, ~$0.005/query)",
+        "- **Claude direct** (via Anthropic API — top 20 Tier-1 queries, ~$0.005/query)",
+        "- **ChatGPT + Gemini + Perplexity in Brand Radar** (via Ahrefs Brand Radar — Arel's 20 baseline queries seeded, populates over 1-2 weeks)",
+        "- **Google AI Overviews** (manual or scripted SERP capture — TBD in Phase 3)",
+        "",
+        "## Output files",
+        "",
+        "- `02_query_bank.md` — this file (human-readable)",
+        "- `02_query_bank.csv` — for `aeo_audit.py batch` (query, category, client_domain)",
+        "- `02_query_bank.json` — programmatic full schema",
+        "- `_inputs/brand_radar_prompts.md` — top 30 prompts (Arel's 20 baseline + 10 supplementary) ready to paste into Ahrefs Brand Radar UI",
+    ]
+    p.write_text("\n".join(lines))
+    return p
+
+
+def write_brand_radar_prompts():
+    """Brand Radar UI prompts: ALL 20 Arel baseline queries + 10 highest-leverage supplementary = 30."""
+    baseline = [q for q in QUERIES if q.get("baseline")]
+    # 24 baseline (Q10 expanded to 5). Take all 24.
+    supplementary_picks = [
+        "Best speaker marketplaces 2026",
+        "Speaker bureau vs speaker marketplace which should I use",
+        "How do I verify a speaker's audience feedback?",
+        "Speaker performance data by topic",
+        "Speaker industry data and trends 2026",
+        "How do speakers get booked",
+    ]
+    supplementary = [q for q in QUERIES if q["q"] in supplementary_picks]
+    selected = baseline + supplementary
+
+    p = OUT / "_inputs/brand_radar_prompts.md"
+    lines = [
+        "# Brand Radar Prompts — Talkadot Project (Ahrefs)",
+        "",
+        f"**Total prompts: {len(selected)}** ({len(baseline)} Arel baseline queries + {len(supplementary)} supplementary)",
+        "",
+        "## Strategic note",
+        "",
+        "Arel's 20 baseline queries (Section 10 of his AEO Strategy doc) are the success metric.",
+        "Talkadot must appear in at least 8 of 20 at 90 days, 14 of 20 at 180 days.",
+        "Q10 ('Talkadot vs [top competitor]') is expanded to all 5 specific competitor comparisons because the brand-radar UI needs concrete prompts.",
+        "",
+        "## How to add",
+        "",
+        "1. Open Ahrefs → Brand Radar → Talkadot project's report (id `019db635-ba2e-7164-bbbd-b2b5d52285b8`)",
+        "2. Confirm data sources are ON: ChatGPT, Gemini, Perplexity (Copilot + Grok optional bonus)",
+        "3. Paste each prompt below into the Custom Prompts list",
+        "4. Save. Brand Radar will populate trend data over 1-2 weeks.",
+        "",
+        "## Prompts (paste-ready)",
+        "",
+        "### Arel baseline (success metric — track every week)",
+        "",
+    ]
+    for i, q in enumerate(baseline, 1):
+        lines.append(f"{i}. {q['q']}")
+    lines += [
+        "",
+        "### Supplementary (extends category coverage)",
+        "",
+    ]
+    for i, q in enumerate(supplementary, len(baseline) + 1):
+        lines.append(f"{i}. {q['q']}")
+    lines += [
+        "",
+        f"**Total: {len(selected)} prompts**",
+    ]
+    p.write_text("\n".join(lines))
+    return p
+
+
+if __name__ == "__main__":
+    md = write_md()
+    csv_p = write_csv()
+    json_p = write_json()
+    radar = write_brand_radar_prompts()
+    print(f"Wrote: {md}")
+    print(f"Wrote: {csv_p}")
+    print(f"Wrote: {json_p}")
+    print(f"Wrote: {radar}")
+    print(f"\nTotal queries: {len(QUERIES)}")
+    print(f"  Arel baseline: {sum(1 for q in QUERIES if q.get('baseline'))}")
+    print(f"  Planner: {sum(1 for q in QUERIES if q['side'] == 'planner')} ({round(sum(1 for q in QUERIES if q['side'] == 'planner')*100/len(QUERIES),1)}%)")
+    print(f"  Speaker: {sum(1 for q in QUERIES if q['side'] == 'speaker')} ({round(sum(1 for q in QUERIES if q['side'] == 'speaker')*100/len(QUERIES),1)}%)")
+    print(f"  Tier 1: {sum(1 for q in QUERIES if q['tier'] == 1)}")
+    print(f"  Tier 2: {sum(1 for q in QUERIES if q['tier'] == 2)}")
+    print(f"  Tier 3: {sum(1 for q in QUERIES if q['tier'] == 3)}")

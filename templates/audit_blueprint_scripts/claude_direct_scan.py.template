@@ -1,0 +1,246 @@
+#!/usr/bin/env python3
+"""Run Claude direct citation scan on Talkadot Tier-1 queries.
+
+Uses Anthropic Messages API with web_search tool to capture what Claude
+actually says when asked the planner-side AEO queries. Records the response
+text and any cited URLs/domains for citation analysis.
+
+Output:
+  - 03_citation_scan/claude/claude-results.json (per-query response + citations)
+  - 03_citation_scan/claude/analysis_summary.md (computed metrics)
+"""
+import json
+import os
+import re
+from collections import Counter, defaultdict
+from pathlib import Path
+from urllib.parse import urlparse
+
+import anthropic
+from dotenv import load_dotenv
+
+load_dotenv()
+
+ROOT = Path("/Users/genfurukawa/talkadot/research/audits/2026-04-23")
+QUERY_BANK = ROOT / "02_query_bank.json"
+OUT_DIR = ROOT / "03_citation_scan/claude"
+OUT_DIR.mkdir(parents=True, exist_ok=True)
+
+CLIENT_DOMAIN = "talkadot.com"
+LOCKED_COMPETITORS = {
+    "espeakers.com": "eSpeakers",
+    "speakerhub.com": "SpeakerHub",
+    "bigspeak.com": "BigSpeak",
+    "allamericanspeakers.com": "AAE Speakers",
+    "bark.com": "Bark.com",
+}
+TRACKED = {CLIENT_DOMAIN: "Talkadot", **LOCKED_COMPETITORS}
+
+MODEL = "claude-haiku-4-5"
+MAX_TOKENS = 2000
+
+
+def normalize_domain(d: str) -> str:
+    if not d:
+        return ""
+    d = d.lower().strip()
+    if d.startswith("www."):
+        d = d[4:]
+    return d
+
+
+def extract_urls_from_text(text: str) -> list[str]:
+    """Extract any URLs Claude references in plain text (fallback if no structured citations)."""
+    return re.findall(r'https?://[^\s\)\]]+', text)
+
+
+def query_claude_with_search(client, query: str) -> dict:
+    """Send a query to Claude with web_search tool enabled. Return response data + citations."""
+    prompt = f"{query}\n\nPlease search the web and provide a clear, sourced answer. Cite specific platforms or websites where relevant."
+    try:
+        msg = client.messages.create(
+            model=MODEL,
+            max_tokens=MAX_TOKENS,
+            tools=[{
+                "type": "web_search_20250305",
+                "name": "web_search",
+                "max_uses": 3,
+            }],
+            messages=[{"role": "user", "content": prompt}],
+        )
+    except Exception as e:
+        return {"query": query, "error": str(e), "response_text": "", "cited_urls": [], "cited_domains": []}
+
+    # Extract response text + tool uses
+    response_text = ""
+    cited_urls = []
+    for block in msg.content:
+        if hasattr(block, "text"):
+            response_text += block.text
+        # Check for citations in text blocks
+        if hasattr(block, "citations") and block.citations:
+            for cit in block.citations:
+                if hasattr(cit, "url"):
+                    cited_urls.append(cit.url)
+        # web_search_tool_result blocks contain cited URLs
+        if hasattr(block, "type") and block.type == "web_search_tool_result":
+            content = getattr(block, "content", [])
+            for item in content:
+                if hasattr(item, "url"):
+                    cited_urls.append(item.url)
+
+    # Also extract URLs mentioned in the response text
+    text_urls = extract_urls_from_text(response_text)
+    all_urls = list(dict.fromkeys(cited_urls + text_urls))  # dedupe, preserve order
+    domains = [normalize_domain(urlparse(u).netloc) for u in all_urls]
+
+    return {
+        "query": query,
+        "error": None,
+        "response_text": response_text,
+        "cited_urls": all_urls,
+        "cited_domains": [d for d in domains if d],
+        "stop_reason": msg.stop_reason,
+        "usage": {
+            "input_tokens": msg.usage.input_tokens,
+            "output_tokens": msg.usage.output_tokens,
+        },
+    }
+
+
+def run_scan(queries: list[dict]) -> list[dict]:
+    client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+    results = []
+    for i, q in enumerate(queries, 1):
+        query_text = q["q"]
+        print(f"[{i}/{len(queries)}] {query_text[:60]}...")
+        result = query_claude_with_search(client, query_text)
+        result["tier"] = q.get("tier")
+        result["category"] = q.get("cat")
+        result["baseline"] = q.get("baseline", False)
+        results.append(result)
+    return results
+
+
+def analyze(results: list[dict]) -> dict:
+    """Compute citation metrics same shape as Perplexity analysis."""
+    domain_freq = Counter()
+    domain_first_position = defaultdict(list)
+    tracked_appearances = {d: [] for d in TRACKED}
+
+    for r in results:
+        domains = r.get("cited_domains", [])
+        seen = set()
+        for pos, domain in enumerate(domains):
+            if domain in seen:
+                continue
+            seen.add(domain)
+            domain_freq[domain] += 1
+            domain_first_position[domain].append(pos)
+            for tracked in TRACKED:
+                if domain == tracked or domain.endswith("." + tracked):
+                    tracked_appearances[tracked].append((r["query"], pos, ""))
+
+    return {
+        "domain_freq": domain_freq,
+        "domain_first_position": dict(domain_first_position),
+        "tracked_appearances": tracked_appearances,
+    }
+
+
+def write_summary(results, analysis, out_path):
+    n = len(results)
+    talkadot_apps = analysis["tracked_appearances"][CLIENT_DOMAIN]
+    with open(out_path, "w") as f:
+        f.write(f"# Claude Direct Citation Scan Analysis - 2026-04-23\n\n")
+        f.write(f"**Source:** Anthropic Messages API ({MODEL}) with web_search tool\n")
+        f.write(f"**Queries scanned:** {n}\n\n")
+        f.write(f"## Headline finding\n\n")
+        f.write(f"**Talkadot is cited in {len(talkadot_apps)} of {n} queries' Claude responses.**\n\n")
+
+        f.write(f"## Tracked domain appearances\n\n")
+        f.write(f"| Domain | Cited (of {n}) | Coverage % | Avg first-mention position |\n")
+        f.write(f"|---|---|---|---|\n")
+        for tracked, label in TRACKED.items():
+            apps = analysis["tracked_appearances"][tracked]
+            count = len(apps)
+            pct = round(count * 100 / n, 1) if n else 0
+            if count:
+                positions = [p for _, p, _ in apps]
+                avg_p = round(sum(positions) / len(positions), 1)
+            else:
+                avg_p = "-"
+            tag = " (CLIENT)" if tracked == CLIENT_DOMAIN else ""
+            f.write(f"| {label}{tag} | {count} | {pct}% | {avg_p} |\n")
+        f.write(f"\n")
+
+        f.write(f"## Top 30 cited domains across all queries\n\n")
+        f.write(f"| Rank | Domain | Cited in | Avg position |\n")
+        f.write(f"|---|---|---|---|\n")
+        for i, (domain, count) in enumerate(analysis["domain_freq"].most_common(30), 1):
+            positions = analysis["domain_first_position"][domain]
+            avg_p = round(sum(positions)/len(positions), 1) if positions else "-"
+            tag = ""
+            if domain == CLIENT_DOMAIN:
+                tag = " **CLIENT**"
+            elif domain in LOCKED_COMPETITORS:
+                tag = f" **{LOCKED_COMPETITORS[domain]}**"
+            f.write(f"| {i} | {domain}{tag} | {count} | {avg_p} |\n")
+        f.write(f"\n")
+
+        f.write(f"## Per-query Talkadot citations (where we appear)\n\n")
+        if talkadot_apps:
+            for query, pos, _ in talkadot_apps:
+                f.write(f"- pos {pos} | `{query}`\n")
+        else:
+            f.write(f"_Not cited in any queries. Big gap to close on Claude._\n")
+        f.write(f"\n")
+
+        f.write(f"## Per-query response highlights\n\n")
+        for r in results:
+            f.write(f"### {r['query']}\n")
+            domains = r.get("cited_domains", [])[:5]
+            for d in domains:
+                tag = ""
+                if d == CLIENT_DOMAIN:
+                    tag = " **TALKADOT**"
+                elif d in LOCKED_COMPETITORS:
+                    tag = f" **{LOCKED_COMPETITORS[d]}**"
+                f.write(f"- {d}{tag}\n")
+            response_excerpt = (r.get("response_text") or "")[:300].replace("\n", " ")
+            if response_excerpt:
+                f.write(f"\n  > {response_excerpt}...\n")
+            f.write(f"\n")
+
+
+def main():
+    with open(QUERY_BANK) as f:
+        bank = json.load(f)
+    queries = bank["queries"]
+    # Filter to Tier 1 + Tier 2 (skip speaker-side Tier 3 to keep cost down)
+    selected = [q for q in queries if q["tier"] in (1, 2)]
+    print(f"Scanning {len(selected)} Tier-1/2 queries via Claude {MODEL} with web search...\n")
+
+    results = run_scan(selected)
+
+    raw_path = OUT_DIR / "claude-results.json"
+    with open(raw_path, "w") as f:
+        json.dump(results, f, indent=2, default=str)
+    print(f"\nWrote raw: {raw_path}")
+
+    analysis = analyze(results)
+    summary_path = OUT_DIR / "analysis_summary.md"
+    write_summary(results, analysis, summary_path)
+    print(f"Wrote summary: {summary_path}")
+
+    # Final tally
+    talkadot_count = len(analysis["tracked_appearances"][CLIENT_DOMAIN])
+    print(f"\nTalkadot cited in {talkadot_count} of {len(results)} queries.")
+    for tracked, label in TRACKED.items():
+        n = len(analysis["tracked_appearances"][tracked])
+        pct = round(n * 100 / len(results), 1)
+        print(f"  {label:20} {n:3}/{len(results)} ({pct}%)")
+
+
+if __name__ == "__main__":
+    main()

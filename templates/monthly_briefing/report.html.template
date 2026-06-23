@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{client_name}} - AI Visibility Briefing - {{month_label}}</title>
+<style>
+  :root {
+    --bg: {{brand_bg}};
+    --fg: {{brand_fg}};
+    --accent: {{brand_accent}};
+    --muted: #888;
+    --card: rgba(255,255,255,0.05);
+    --border: rgba(255,255,255,0.1);
+    --positive: #4ecdc4;
+    --negative: #ff6b6b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.6;
+    padding: 48px 24px;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+  .header h1 {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .header .month {
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .logo {
+    max-height: 48px;
+    width: auto;
+  }
+  h2 {
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-top: 64px;
+    margin-bottom: 16px;
+  }
+  h3 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    letter-spacing: -0.01em;
+  }
+  p { margin-bottom: 16px; font-size: 16px; }
+  .scorecard {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+  .metric {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .metric.spotlight {
+    background: var(--accent);
+    color: var(--bg);
+  }
+  .metric .label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.7;
+    margin-bottom: 8px;
+  }
+  .metric .value {
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    margin-bottom: 4px;
+  }
+  .metric .delta {
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .delta.positive { color: var(--positive); }
+  .delta.negative { color: var(--negative); }
+  .metric.spotlight .delta.positive,
+  .metric.spotlight .delta.negative { color: var(--bg); opacity: 0.7; }
+  .chart-container {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 32px;
+    height: 320px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 32px;
+    font-size: 14px;
+  }
+  th, td {
+    text-align: left;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+  ul.queries {
+    list-style: none;
+    margin-bottom: 32px;
+  }
+  ul.queries li {
+    padding: 16px;
+    background: var(--card);
+    border-left: 3px solid var(--accent);
+    margin-bottom: 8px;
+    border-radius: 4px;
+  }
+  ul.queries li .query {
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  ul.queries li .meta {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .memo {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    margin-top: 48px;
+  }
+  .memo h3 {
+    color: var(--accent);
+    margin-bottom: 24px;
+  }
+  .memo p { font-size: 17px; line-height: 1.7; }
+  .next-month {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .plan-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .plan-card h4 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+  .plan-card ol {
+    padding-left: 20px;
+    font-size: 14px;
+  }
+  .plan-card ol li { margin-bottom: 8px; }
+  .footer {
+    margin-top: 96px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+  }
+  @media (max-width: 768px) {
+    .scorecard { grid-template-columns: repeat(2, 1fr); }
+    .next-month { grid-template-columns: 1fr; }
+    body { padding: 24px 16px; }
+  }
+  @media print {
+    body { background: white; color: black; }
+    .metric, .chart-container, .memo, .plan-card { background: #f5f5f5; border-color: #ddd; }
+    .metric.spotlight { background: var(--accent); }
+    .chart-container { page-break-inside: avoid; }
+    h2 { page-break-after: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>{{client_name}}</h1>
+    <div class="month">AI Visibility Briefing - {{month_label}}</div>
+  </div>
+  {{#if client_logo}}<img src="{{client_logo}}" alt="{{client_name}}" class="logo">{{/if}}
+</div>
+
+<h2>This Month at a Glance</h2>
+<div class="scorecard">
+  <div class="metric spotlight">
+    <div class="label">Source Control Rate</div>
+    <div class="value">{{scr_value}}%</div>
+    <div class="delta {{scr_delta_class}}">{{scr_delta_arrow}} {{scr_delta_pct}}% MoM</div>
+  </div>
+  <div class="metric">
+    <div class="label">Share of Voice</div>
+    <div class="value">{{sov_value}}%</div>
+    <div class="delta {{sov_delta_class}}">{{sov_delta_arrow}} {{sov_delta_pct}}% MoM</div>
+  </div>
+  <div class="metric">
+    <div class="label">AI Mentions</div>
+    <div class="value">{{mentions_value}}</div>
+    <div class="delta {{mentions_delta_class}}">{{mentions_delta_arrow}} {{mentions_delta_pct}}% MoM</div>
+  </div>
+  <div class="metric">
+    <div class="label">Est. Impressions</div>
+    <div class="value">{{impressions_value}}</div>
+    <div class="delta {{impressions_delta_class}}">{{impressions_delta_arrow}} {{impressions_delta_pct}}% MoM</div>
+  </div>
+</div>
+
+<h2>The North Star: Source Control Rate</h2>
+<p>When buyers ask AI about {{category}}, your owned content shapes the answer in <strong>{{scr_value}}% of responses</strong>. {{scr_narrative}}</p>
+<div class="chart-container">
+  <canvas id="scrChart"></canvas>
+</div>
+
+<h2>Share of Voice (90 days)</h2>
+<div class="chart-container">
+  <canvas id="sovChart"></canvas>
+</div>
+
+<h2>vs Named Competitors</h2>
+<table>
+  <thead>
+    <tr><th>Brand</th><th>SOV This Month</th><th>MoM Change</th><th>Trend</th></tr>
+  </thead>
+  <tbody>
+    {{competitor_rows}}
+  </tbody>
+</table>
+
+<h2>What Moved This Month</h2>
+{{moved_section}}
+
+<h2>Top 5 Winning Queries</h2>
+<ul class="queries">
+  {{winning_queries_html}}
+</ul>
+
+<h2>Top 5 Gap Queries (where you should win)</h2>
+<ul class="queries">
+  {{gap_queries_html}}
+</ul>
+
+<h2>New Cited Domains (earned authority targets)</h2>
+<ul>
+  {{new_cited_domains_html}}
+</ul>
+
+<h2>Next Month Plan</h2>
+<div class="next-month">
+  <div class="plan-card">
+    <h4>Content Priorities</h4>
+    <ol>{{content_priorities_html}}</ol>
+  </div>
+  <div class="plan-card">
+    <h4>Earned Source Placements</h4>
+    <ol>{{earned_placements_html}}</ol>
+  </div>
+  <div class="plan-card">
+    <h4>Expected Score Impact</h4>
+    <ol>{{expected_impact_html}}</ol>
+  </div>
+</div>
+
+<div class="memo">
+  <h3>Strategic Memo</h3>
+  {{strategic_memo_html}}
+</div>
+
+<div class="footer">
+  Generated {{generated_at}} by {{brand_name}} (visibility ops methodology)<br>
+  Data: Ahrefs Brand Radar, Google Search Console, GA4, Notion
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+  const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+  const fg = getComputedStyle(document.documentElement).getPropertyValue('--fg').trim();
+  const muted = getComputedStyle(document.documentElement).getPropertyValue('--muted').trim();
+
+  const commonOpts = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { labels: { color: fg } } },
+    scales: {
+      x: { ticks: { color: muted }, grid: { color: 'rgba(255,255,255,0.05)' } },
+      y: { ticks: { color: muted }, grid: { color: 'rgba(255,255,255,0.05)' } }
+    }
+  };
+
+  new Chart(document.getElementById('scrChart'), {
+    type: 'line',
+    data: {
+      labels: {{scr_chart_labels}},
+      datasets: [{
+        label: 'Source Control Rate (%)',
+        data: {{scr_chart_data}},
+        borderColor: accent,
+        backgroundColor: accent + '33',
+        tension: 0.3,
+        fill: true
+      }]
+    },
+    options: commonOpts
+  });
+
+  new Chart(document.getElementById('sovChart'), {
+    type: 'line',
+    data: {
+      labels: {{sov_chart_labels}},
+      datasets: {{sov_chart_datasets}}
+    },
+    options: commonOpts
+  });
+</script>
+
+</body>
+</html>
