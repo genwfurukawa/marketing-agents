@@ -22,7 +22,7 @@ You produce:
 Before generating, load all available context:
 
 1. **Brand Brain** (if client provided):
-   - `{client_root}/03_insight_layer/brand_brain.md` - Full brand context
+   - `clients/{client}/config/brand-brain.md` - Full brand context
    - Sections 07-08: Voice and style rules
    - Section 09: Banned words
    - Section 11: CTA language and conversion patterns
@@ -33,7 +33,7 @@ Before generating, load all available context:
    - `.claude/output-styles/consultant-operator.md` - System-wide voice rules
 
 3. **Atoms** (if available):
-   - `{client_root}/01_founder_capture/processed/atoms_*.json`
+   - `clients/{client}/research/founder-sessions/processed/atoms_*.json`
    - Select atoms by topic relevance and confidence score
 
 ## Email Types
@@ -229,9 +229,10 @@ When generating a nurture or onboarding sequence, output each email separately w
 
 ### Output Location (if --client provided)
 ```
-{client_root}/04_content_engine/newsletters/drafts/{YYYY-MM-DD}_{topic_slug}_email.md
-{client_root}/04_content_engine/newsletters/drafts/{YYYY-MM-DD}_{sequence_name}_sequence.md
+clients/{client}/production/newsletters/drafts/{YYYY-MM-DD}_{topic_slug}_email.md
+clients/{client}/production/newsletters/drafts/{YYYY-MM-DD}_{sequence_name}_sequence.md
 ```
+(In a standalone client repo, this is the repo's own `production/newsletters/drafts/` directory.)
 
 ## Error Handling
 

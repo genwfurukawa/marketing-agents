@@ -9,7 +9,7 @@ metadata:
 
 You generate complete, publish-ready AEO pages structured for AI retrieval. You cover all 14 page types in `templates/aeo_page_types/`. Every page you produce ships through the quality chain automatically: aeo-checker -> aeo-injector -> voice-validator.
 
-You replace the legacy `aeo-page-brief-agent` (which covered only 7 types). Use that agent only for backward compatibility.
+This skill is the single path for AEO page generation, all 14 types.
 
 ---
 
@@ -61,7 +61,7 @@ User says any of:
 Required for every type:
 - `page_type` (one of the 14 slugs above)
 - `topic` (the specific subject)
-- `client_slug` (defaults to current ops repo brand from clients/{client}/config.yaml)
+- `client_slug` (if omitted, resolve via the `CLIENT_CONFIG` env var pointing at the client's config.yaml)
 
 Type-specific required inputs:
 
@@ -91,10 +91,10 @@ If required inputs are missing, ask for them before generating.
 1. **Read context files in parallel:**
    - `clients/{client}/config.yaml` (brand identity, voice, ICP, competitors)
    - `lessons.md` (compounding corrections)
-   - `config/voice-guide.md` (voice rules)
-   - `config/icp-psyche.md` (deep ICP)
+   - `clients/{client}/config/voice-guide.md` (voice rules)
+   - `clients/{client}/config/icp-psyche.md` (deep ICP)
    - `templates/aeo_page_types/{page_type_template_file}.md` (structural template)
-   - `config/brand-brain.md` (if present)
+   - `clients/{client}/config/brand-brain.md` (if present)
 
 2. **Web research pass.** For any type that needs real data (comparison, alternatives, best_tools, statistics, competitor_review, integration), use WebSearch + WebFetch to pull pricing, features, reviews, citations. Never hallucinate tables.
 
@@ -127,10 +127,10 @@ If required inputs are missing, ask for them before generating.
 
 5. **Generate schema markup.** Call `schema-generator` skill with the page_type and the draft. Embed returned JSON-LD at the bottom of the page.
 
-6. **Write outputs.**
+6. **Write outputs.** (In a standalone client repo, `clients/{client}/` means the repo root.)
 
 ```
-production/aeo_pages/{page_type}/{topic_slug}/
+clients/{client}/production/aeo_pages/{page_type}/{topic_slug}/
   draft.md              (final post-validation draft)
   draft_pre_check.md    (draft before quality gates, for diff)
   aeo_report.md         (aeo-checker output)
@@ -159,8 +159,6 @@ production/aeo_pages/{page_type}/{topic_slug}/
 
 7. **Web research before tables.** Do not invent pricing, feature lists, or competitor data. Use WebSearch/WebFetch. Cite sources for statistics pages.
 
-8. **Backward compat.** The legacy `aeo-page-brief-agent` agent still exists for the 7 original types. Prefer this skill for new work. Match the existing agent's output schema (research/{slug}/...) when the user explicitly requests it.
-
 ---
 
 ## Auto-Chain Sequence (Explicit)
@@ -184,7 +182,7 @@ production/aeo_pages/{page_type}/{topic_slug}/
    c. Do not proceed to publish with an open BLOCKER
 10. Call schema-generator with page_type + draft.md
 11. Embed schema.jsonld at the bottom of draft.md
-12. Write all artifacts to production/aeo_pages/{page_type}/{topic_slug}/
+12. Write all artifacts to clients/{client}/production/aeo_pages/{page_type}/{topic_slug}/
 13. Surface 3-5 internal link suggestions
 14. Report: word count, FAQ count, schema types, validation pass status, cross-model verdict
 ```
@@ -193,7 +191,6 @@ production/aeo_pages/{page_type}/{topic_slug}/
 
 ## Related
 
-- Legacy: `aeo-page-brief-agent` (covers 7 of 14 types, no auto-chain)
 - Strategy: `ai-content-architect-agent` (plans which page types to build)
 - Quality gates: `aeo-checker`, `aeo-injector`, `voice-validator`
 - Schema: `schema-generator`

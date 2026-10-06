@@ -39,7 +39,7 @@ signals. Teardown grades the winner on exactly these:
 You need:
 1. **The target query** (what the buyer asks the engine)
 2. **The cited competitor URL** — from `aeo-engine-scan` /
-   `citation-decay-monitor` / the gap matrix. If you have the query but not the URL,
+   `aeo-engine-scan` (decay mode) / the gap matrix. If you have the query but not the URL,
    run `aeo-engine-scan` on that query first to capture who's actually cited.
 3. **The engine(s)** where it wins (Perplexity vs ChatGPT vs AIO can reward
    different things).

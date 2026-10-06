@@ -68,10 +68,11 @@ Instructions:
 ### Phase 1: Load Brand Context
 
 ```
-1. Resolve client root from clients_registry.json
-2. Load brand brain from {client_root}/03_insight_layer/brand_brain.md
-3. Load positioning framework from {client_root}/02_positioning_pov/
-4. Load ICP from {client_root}/01_icp_category/
+1. Resolve the active client via the active client convention: explicit client slug argument,
+   else CLIENT_CONFIG env var pointing at the client's config.yaml
+2. Load brand brain from clients/{slug}/config/brand-brain.md
+3. Load positioning from clients/{slug}/config.yaml and the positioning sections of the brand brain
+4. Load ICP from clients/{slug}/config/icp-psyche.md (plus the icp block in config.yaml)
 5. Extract: company name, category, product description, differentiators, founder name
 ```
 
@@ -159,7 +160,7 @@ Use WebSearch to find existing brand mentions across the web. For each:
 
 ```
 1. Compile into output JSON matching entity_authority_output.json schema
-2. Save to: {client_root}/04_content_engine/entity_authority/{date}_entity_authority_{run_id}.json
+2. Save to: clients/{slug}/production/entity_authority/{date}_entity_authority_{run_id}.json
 3. Save readable markdown report alongside the JSON
 ```
 

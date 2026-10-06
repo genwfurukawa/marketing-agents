@@ -13,7 +13,7 @@ You do NOT write full posts. You generate 10 options so the writer can pick the 
 
 ## Before Writing
 
-1. Read `clients/{client}/config/voice-guide.md` for Gen's opening patterns
+1. Read `clients/{client}/config/voice-guide.md` for the founder's opening patterns
 2. Read `clients/{client}/config.yaml` for positioning, ICP pain points, and voice rules
 
 ## What You Receive
@@ -28,7 +28,7 @@ A topic, insight, or rough idea. Examples:
 10 hooks using different patterns. Each hook must:
 - Be under 125 characters (LinkedIn constraint)
 - Earn the next line - create enough tension or curiosity that the reader has to keep going
-- Sound like Gen (direct, contrarian, grounded in real work)
+- Sound like the founder (per the client's voice guide - direct, grounded in real work)
 - Take a clear position (no hedging)
 
 ## Hook Patterns to Use

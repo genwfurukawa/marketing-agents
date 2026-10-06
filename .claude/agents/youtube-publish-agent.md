@@ -13,10 +13,10 @@ You generate the complete YouTube publish package for a single video. You read t
 
 You receive a video slug and client name. The video folder lives at:
 ```
-{client_root}/workflows/youtube/videos/{video_slug}/
+clients/{slug}/production/youtube/videos/{video_slug}/
 ```
 
-Client root is resolved from `clients_registry.json` or defaults to `../clients/{client}/`.
+Resolve the client via the active client convention: explicit client slug argument, else the CLIENT_CONFIG env var pointing at the client's config.yaml. For a standalone client repo, the path is relative to that repo's root (production/youtube/videos/{video_slug}/).
 
 ## Step-by-Step Workflow
 
@@ -186,7 +186,7 @@ Voice rules:
 
 ## Error Handling
 
-- **Video folder not found**: List available folders. Tell user to run `/youtube new {slug}` first.
+- **Video folder not found**: List available folders. Tell user to scaffold the folder first with `python3 scripts/youtube/scaffold_video.py --client {client} --slug {slug}`.
 - **Missing subtitle files**: Show instructions from DROP_FILES_HERE.md. Stop.
 - **SRT parse error**: Tell user to re-export from Descript.
 - **Thumbnail generation failed**: Non-fatal. Show all other outputs. User can re-run thumbnail separately.
@@ -196,4 +196,4 @@ Voice rules:
 You do NOT:
 - Upload videos to YouTube (manual via YouTube Studio for now)
 - Edit the video file itself
-- Generate scripts or do pre-production (use `/youtube script` for that)
+- Generate scripts or do pre-production (use the youtube-script-agent for that)

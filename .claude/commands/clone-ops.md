@@ -34,6 +34,11 @@ mkdir -p {client_root}/{config,brand,research,vault,production,playbooks,ops}
 mkdir -p {client_root}/intelligence/{scans,scorecards,gaps}
 mkdir -p {client_root}/intelligence/strategy/reflections
 mkdir -p {client_root}/content/{linkedin,email,blog}
+# Engine: Brain, Gates, Ledger, and the drafts-in-flight folder (ENGINE_PRD.md 7.2)
+mkdir -p {client_root}/brain/proof
+mkdir -p {client_root}/gates
+mkdir -p {client_root}/ledger/reports
+mkdir -p {client_root}/production/drafts
 ```
 
 Drop `.gitkeep` files into every empty leaf folder so they survive git:
@@ -46,6 +51,7 @@ Drop `.gitkeep` files into every empty leaf folder so they survive git:
 - `intelligence/scans/.gitkeep`, `intelligence/scorecards/.gitkeep`, `intelligence/gaps/.gitkeep`
 - `intelligence/strategy/.gitkeep`
 - `content/linkedin/.gitkeep`, `content/email/.gitkeep`, `content/blog/.gitkeep`
+- `brain/proof/.gitkeep`, `gates/.gitkeep`, `ledger/reports/.gitkeep`, `production/drafts/.gitkeep`
 
 ## Step 3: Render Root Files from Templates
 
@@ -92,19 +98,19 @@ gh repo create {slug}-ops --private --source=. --remote=origin --push
 
 Write `{client_root}/{slug}.code-workspace`. The file lives inside the client repo for discoverability but is **gitignored** (Step 4's `.gitignore` uses the `*.code-workspace` glob) because its paths are machine-specific.
 
-Use **relative** paths so the workspace survives a home-dir move. From `~/clients/{slug}/`, `../../aeo-os` resolves to `~/aeo-os`.
+Use **relative** paths so the workspace survives a home-dir move. From `~/clients/{slug}/`, `../../marketing-agents` resolves to `$MARKETING_AGENTS`.
 
 ```json
 {
   "folders": [
     { "name": "{name} (client)", "path": "." },
-    { "name": "Methodology (SOPs)", "path": "../../aeo-os" }
+    { "name": "Methodology (SOPs)", "path": "../../marketing-agents" }
   ],
   "settings": {}
 }
 ```
 
-This assumes the canonical layout: client repos in `~/clients/{slug}/`, methodology at `~/aeo-os/`. If a client sits elsewhere, adjust the relative hops.
+This assumes the canonical layout: client repos in `~/clients/{slug}/`, methodology at `$MARKETING_AGENTS/`. If a client sits elsewhere, adjust the relative hops.
 
 ## Step 8: Report
 
@@ -116,7 +122,7 @@ Output a summary:
 - Folder count, file count
 - **Next steps:**
   1. Open `~/clients/{slug}/{slug}.code-workspace` in VS Code
-  2. Fill `clients/{slug}/config.yaml`
+  2. Fill `config.yaml` at the client repo root
   3. Run `/build-brand-brain` to populate `config/brand-brain.md`
   4. Fill remaining config files
   5. Add brand assets to `brand/`

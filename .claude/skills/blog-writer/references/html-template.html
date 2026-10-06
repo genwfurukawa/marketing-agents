@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<!--
+  blog-writer HTML render shell. House style = SuperMarketers (black / neon lime / Inter).
+  Override the :root color vars from the active client's config.yaml visual_style.colors
+  (primary -> --accent, bg -> --bg, text -> --text). Keep Inter unless the client font differs.
+
+  How to use: the skill translates the markdown draft into the components below and drops the
+  result between the BODY START / BODY END markers. The component markup here is the menu of
+  styled blocks available: prose, figure+caption, stats table, pull quote, callout, FAQ.
+  Delete any component you don't use. Every <figure> stays a real-image placeholder until Gen
+  drops the file in /media.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{TITLE}}</title>
+<meta name="description" content="{{DEK}}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0a0a; --panel:#141414; --panel2:#1b1b1b;
+    --line:#2a2a2a; --text:#f5f5f5; --muted:#a8a8a8;
+    --accent:#dfff00;            /* override from config visual_style.colors.primary/accent */
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:'Inter',-apple-system,'Helvetica Neue',Arial,sans-serif;
+    background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:720px;margin:0 auto;padding:0 24px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+
+  /* header */
+  header{padding:72px 0 40px;border-bottom:1px solid var(--line)}
+  .tag{display:inline-block;font-size:12px;font-weight:600;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);
+    border-radius:999px;padding:5px 12px;margin-bottom:22px}
+  h1{font-size:44px;font-weight:800;line-height:1.08;letter-spacing:-.02em}
+  h1 .dot{color:var(--accent)}
+  .dek{font-size:20px;color:var(--muted);margin-top:18px;max-width:600px}
+  .byline{display:flex;align-items:center;gap:12px;margin-top:26px;font-size:14px;color:var(--muted)}
+  .byline .avatar{width:36px;height:36px;border-radius:50%;background:var(--panel2);border:1px solid var(--line)}
+  .byline b{color:var(--text);font-weight:600}
+
+  /* article body */
+  article{padding:44px 0}
+  article h2{font-size:28px;font-weight:700;letter-spacing:-.01em;margin:44px 0 14px}
+  article h3{font-size:21px;font-weight:700;margin:32px 0 10px}
+  article p{font-size:18px;color:#dcdcdc;margin-bottom:20px}
+  article strong{color:#fff;font-weight:600}
+  article ul,article ol{margin:0 0 20px 22px;color:#dcdcdc;font-size:18px}
+  article li{margin-bottom:8px}
+  .lead{font-size:21px;color:#eaeaea}
+
+  /* figure = REAL image/video placeholder until Gen fills it */
+  figure{margin:30px 0}
+  figure .placeholder{background:var(--panel);border:1px dashed var(--accent);border-radius:12px;
+    padding:40px 24px;text-align:center;color:var(--muted);font-size:14px}
+  figure .placeholder .label{display:block;color:var(--accent);font-weight:700;letter-spacing:.08em;
+    text-transform:uppercase;font-size:11px;margin-bottom:8px}
+  figure img{width:100%;border-radius:12px;border:1px solid var(--line);display:block}
+  figure video{width:100%;border-radius:12px;border:1px solid var(--line);display:block}
+  figcaption{font-size:14px;color:var(--muted);margin-top:10px;font-style:italic;text-align:center}
+
+  /* stats table */
+  .stats{margin:30px 0}
+  .stats .cap{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+  table{width:100%;border-collapse:collapse;font-size:16px;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  th,td{text-align:left;padding:13px 18px;border-bottom:1px solid var(--line)}
+  th{background:var(--panel2);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  tr:last-child td{border-bottom:none}
+  td .delta-up{color:var(--accent);font-weight:600}
+  td .delta-down{color:#ff6b6b;font-weight:600}
+  td code{color:var(--accent);font-family:ui-monospace,Menlo,monospace;font-size:14px}
+
+  /* pull quote */
+  .pullquote{border-left:3px solid var(--accent);padding:6px 0 6px 22px;margin:32px 0;
+    font-size:24px;font-weight:600;line-height:1.4;color:#fff}
+
+  /* callout */
+  .callout{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:10px;padding:20px 22px;margin:28px 0}.callout p{margin:0;font-size:17px}
+
+  /* FAQ (optional) */
+  .faq{margin-top:14px}
+  details{border-bottom:1px solid var(--line);padding:16px 0}details:last-child{border-bottom:none}
+  summary{cursor:pointer;font-weight:600;font-size:18px;color:#fff;list-style:none;display:flex;justify-content:space-between;align-items:center}
+  summary::-webkit-details-marker{display:none}
+  summary::after{content:'+';color:var(--accent);font-size:22px;font-weight:400}
+  details[open] summary::after{content:'\2013'}
+  details p{margin-top:12px;font-size:16px;color:var(--muted)}
+
+  footer{padding:40px 0 64px;border-top:1px solid var(--line);color:#666;font-size:14px;margin-top:40px}
+  footer .mark{font-weight:800;color:#fff}footer .mark .dot{color:var(--accent)}
+  @media(max-width:680px){h1{font-size:32px}article p,article ul,article ol{font-size:17px}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <span class="tag">{{TAG}}</span>
+    <h1>{{TITLE}}<span class="dot">.</span></h1>
+    <p class="dek">{{DEK}}</p>
+    <div class="byline">
+      <span class="avatar"></span>
+      <span><b>{{AUTHOR}}</b> · {{DATE}} · {{READ_TIME}} min read</span>
+    </div>
+  </div>
+</header>
+
+<article>
+  <div class="wrap">
+
+    <!-- BODY START -->
+    <!--
+      Translate the markdown draft into these components. Reference markup:
+
+      <p class="lead">First paragraph - the in-medias-res open. No preamble.</p>
+
+      <figure>
+        <div class="placeholder">
+          <span class="label">📸 Real screenshot needed</span>
+          Notion → the client portal → screenshot the task board.<br>Save as media/01-notion-board.png, then replace this block with:<br>
+          &lt;img src="media/01-notion-board.png" alt="..."&gt;
+        </div>
+        <figcaption>What the reader is looking at and why it matters.</figcaption>
+      </figure>
+
+      <div class="stats">
+        <div class="cap">What actually moved</div>
+        <table>
+          <tr><th>Metric</th><th>Before</th><th>After</th></tr>
+          <tr><td>Cited queries</td><td>3</td><td><span class="delta-up">11</span></td></tr>
+        </table>
+      </div>
+
+      <blockquote class="pullquote">The one line worth screenshotting.</blockquote>
+
+      <div class="callout"><p>An aside, a caveat, or the honest "here's what I'd do differently."</p></div>
+    -->
+
+    {{BODY}}
+    <!-- BODY END -->
+
+  </div>
+</article>
+
+<footer>
+  <div class="wrap">
+    <span class="mark">{{BRAND}}<span class="dot">.</span></span> -{{FOOTER_NOTE}}
+  </div>
+</footer>
+
+</body>
+</html>

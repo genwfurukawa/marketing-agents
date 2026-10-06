@@ -1,32 +1,30 @@
 ---
 description: Distribution orchestration - schedule QA-approved content across channels, create publish packages, log distribution
-argument-hint: [--client client-slug] [--sprint-dir path/to/sprint/] [--dry-run]
+argument-hint: [--client client-slug] [--content-dir path/to/drafts/] [--dry-run]
 allowed-tools: Task, Read, Write, Glob, Grep, WebFetch
 ---
 
 # Distribute - Cross-Channel Publishing Orchestration
 
-You orchestrate the distribution of QA-approved content across all channels. You generate platform-specific publish packages (copy-paste ready), schedule content across the week, and log everything for the retro phase.
-
-This is the marketing equivalent of G-Stack's `/ship` + `/land-and-deploy` - getting the work from "approved" to "live and verified."
+You orchestrate the distribution of QA-approved content across all channels. You generate platform-specific publish packages (copy-paste ready), schedule content across the week, and log everything for `/campaign-retro`.
 
 ## Prerequisites
 
 1. Content has passed QA (check `qa_report.md` for PASS status)
-2. Client context loaded from `clients_registry.json`
+2. Client resolved via the active client convention: explicit client slug argument, else `CLIENT_CONFIG` env var pointing at the client's `config.yaml`
 3. Config loaded: `clients/{client}/config.yaml` for channel frequency targets and pillar balance
 
 If QA report shows FAIL, STOP and report: "QA has blocking issues. Fix those first with `/content-qa`."
 
 ## Input
 
-- `--sprint-dir path/to/sprint/` - Distribute all QA-approved content from a sprint
+- `--content-dir path/to/drafts/` - Distribute all QA-approved content from a batch directory
 - `--client client-slug` - Resolve client workspace path
 - `--dry-run` - Generate packages and schedule but don't log as distributed
 
 ## Step 1: Load QA-Approved Drafts
 
-Read `qa_report.md` from the sprint directory. Collect all drafts with PASS or PASS WITH WARNINGS status.
+Read `qa_report.md` from the content directory. Collect all drafts with PASS or PASS WITH WARNINGS status.
 
 Read each draft from `drafts/` directory and its frontmatter metadata.
 
@@ -41,10 +39,7 @@ Create a distribution calendar for the week based on:
 - Email/Newsletter: 1x per week
 
 **Pillar balance targets:**
-- AEO: 40% of content
-- AI + Marketing: 25%
-- Claude Code: 20%
-- B2B SaaS: 15%
+Read the active client's pillar names and percentage weights from `clients/{client}/config.yaml` and `clients/{client}/config/pillars.md`. Never assume a pillar mix; each client defines their own.
 
 **Scheduling rules:**
 - LinkedIn: Tuesday, Wednesday, Thursday mornings (8-10am ET)
@@ -54,19 +49,19 @@ Create a distribution calendar for the week based on:
 - Never stack 2 pieces on the same channel on the same day
 - Space LinkedIn posts at least 1 day apart
 
-Output schedule as a table:
+Output schedule as a table (pillar values come from the client's own pillar set):
 
 ```markdown
-## Distribution Schedule: {sprint_id}
+## Distribution Schedule: {week_id}
 
 | Day | Time (ET) | Channel | Piece | Pillar |
 |-----|-----------|---------|-------|--------|
-| Tue | 9:00 AM | LinkedIn | {title} | AEO |
-| Tue | 10:00 AM | Email | {title} | AI+Marketing |
-| Wed | 9:00 AM | LinkedIn | {title} | Claude Code |
-| Thu | 9:00 AM | LinkedIn | {title} | B2B SaaS |
-| Thu | 2:00 PM | YouTube | {title} | AEO |
-| Fri | 9:00 AM | Blog | {title} | AEO |
+| Tue | 9:00 AM | LinkedIn | {title} | {pillar} |
+| Tue | 10:00 AM | Email | {title} | {pillar} |
+| Wed | 9:00 AM | LinkedIn | {title} | {pillar} |
+| Thu | 9:00 AM | LinkedIn | {title} | {pillar} |
+| Thu | 2:00 PM | YouTube | {title} | {pillar} |
+| Fri | 9:00 AM | Blog | {title} | {pillar} |
 ```
 
 ## Step 3: Generate Platform-Specific Publish Packages
@@ -93,7 +88,7 @@ For each content piece, create a copy-paste-ready publish package.
 {If applicable: image file path or generation instructions}
 
 ### Tracking
-- UTM link (if applicable): {url}?utm_source=linkedin&utm_medium=organic&utm_campaign={sprint_id}
+- UTM link (if applicable): {url}?utm_source=linkedin&utm_medium=organic&utm_campaign={week_id}
 ```
 
 ### Blog Publish Package
@@ -147,7 +142,7 @@ For each content piece, create a copy-paste-ready publish package.
 
 ### CTA
 - **Text:** {CTA text}
-- **URL:** {url}?utm_source=email&utm_medium=newsletter&utm_campaign={sprint_id}
+- **URL:** {url}?utm_source=email&utm_medium=newsletter&utm_campaign={week_id}
 
 ### Send settings
 - From: {sender name}
@@ -183,6 +178,7 @@ For each content piece, create a copy-paste-ready publish package.
 {First comment to pin}
 ```
 
+
 ## Step 4: Create Notion Content Calendar Entries
 
 For each content piece, create an entry in the Notion Content Calendar database via MCP:
@@ -192,7 +188,7 @@ For each content piece, create an entry in the Notion Content Calendar database 
 - Pillar: {content pillar}
 - Status: "Scheduled"
 - Publish date: {scheduled date}
-- Sprint: {sprint_id}
+- Batch: {week_id}
 - Draft link: {path to draft file}
 
 If Notion MCP is unavailable, log this as a manual action item.
@@ -203,18 +199,20 @@ Copy final publish-ready content to the client workspace output directories:
 
 | Format | Destination |
 |--------|------------|
-| LinkedIn | `{client_root}/04_content_engine/linkedin/final/{date}_{slug}.md` |
-| Blog | `{client_root}/04_content_engine/blogs/final/{slug}.md` |
-| Email | `{client_root}/04_content_engine/newsletters/final/{date}_{slug}.md` |
-| YouTube | `{client_root}/04_content_engine/youtube/final/{slug}/` |
-| Carousel | `{client_root}/04_content_engine/carousels/final/{date}_{slug}.md` |
+| LinkedIn | `clients/{slug}/production/linkedin/final/{date}_{slug}.md` |
+| Blog | `clients/{slug}/production/blogs/final/{slug}.md` |
+| Email | `clients/{slug}/production/newsletters/final/{date}_{slug}.md` |
+| YouTube | `clients/{slug}/production/youtube/final/{slug}/` |
+| Carousel | `clients/{slug}/production/carousels/final/{date}_{slug}.md` |
+
+(In a standalone client repo, `clients/{slug}/` means the repo root: the active client's `production/` directory.)
 
 ## Step 6: Log Distribution
 
-Write `distribution_log.md` to the sprint directory:
+Write `distribution_log.md` to the content directory:
 
 ```markdown
-# Distribution Log: {sprint_id}
+# Distribution Log: {week_id}
 
 **Client:** {client_slug}
 **Generated:** {timestamp}
@@ -224,18 +222,19 @@ Write `distribution_log.md` to the sprint directory:
 
 | # | Day | Time | Channel | Title | Pillar | Status |
 |---|-----|------|---------|-------|--------|--------|
-| 1 | Tue 9am | LinkedIn | {title} | AEO | Scheduled |
-| 2 | Wed 9am | LinkedIn | {title} | Claude Code | Scheduled |
+| 1 | Tue 9am | LinkedIn | {title} | {pillar} | Scheduled |
+| 2 | Wed 9am | LinkedIn | {title} | {pillar} | Scheduled |
 | ... | ... | ... | ... | ... | ... |
 
 ## Pillar Balance
 
+One row per pillar from the active client's `config/pillars.md`, with that client's target percentages:
+
 | Pillar | Target | Actual | Status |
 |--------|--------|--------|--------|
-| AEO | 40% | {pct}% | {on track / over / under} |
-| AI + Marketing | 25% | {pct}% | {status} |
-| Claude Code | 20% | {pct}% | {status} |
-| B2B SaaS | 15% | {pct}% | {status} |
+| {pillar_1} | {target}% | {pct}% | {on track / over / under} |
+| {pillar_2} | {target}% | {pct}% | {status} |
+| ... | ... | ... | ... |
 
 ## Publish Packages
 
@@ -261,7 +260,7 @@ After publishing, verify each piece:
 
 ## Step 7: Post-Publish Verification (if not dry-run)
 
-After the distribution window, the user can run `/sprint distribute --verify`:
+After the distribution window, the user can run `/distribute --verify`:
 
 For each published piece:
 1. WebFetch the published URL
@@ -284,7 +283,7 @@ With `--dry-run`:
 2. Always generate copy-paste-ready packages (zero editing needed to publish)
 3. Always include UTM parameters on trackable links
 4. Respect channel frequency limits from clients/{client}/config.yaml
-5. Balance pillars as close to target percentages as possible
-6. Log everything - the retro phase depends on complete distribution data
+5. Balance pillars as close to the client's target percentages as possible
+6. Log everything - `/campaign-retro` depends on complete distribution data
 7. Default to dry-run if uncertain - better to preview than publish wrong
 8. Save all final content to client workspace output directories

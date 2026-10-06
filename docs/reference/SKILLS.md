@@ -1,6 +1,6 @@
 # Skills
 
-All 23 skills, grouped by purpose. Skills are composable, reusable units
+All 28 skills, grouped by purpose. Skills are composable, reusable units
 invoked via the Skill tool. Files live in `.claude/skills/{name}/SKILL.md`
 for Claude Code auto-discovery. Each skill folder may contain `evals/`,
 `scripts/`, `assets/`, and templates — these stay co-located with the
@@ -19,7 +19,6 @@ skill.
 
 | Skill | Purpose | Inputs / Outputs |
 |-------|---------|------------------|
-| [llms-txt-generator](.claude/skills/llms-txt-generator/SKILL.md) | Generate `llms.txt` / `llms-full.txt` so AI crawlers find and prioritize the right pages | Page inventory → root-ready llms.txt |
 | [ai-crawler-fix](.claude/skills/ai-crawler-fix/SKILL.md) | Generate a corrected robots.txt AI-bot ruleset + sitemap (remediates `ai-crawler-audit-agent`) | Audit output → robots.txt + sitemap.xml |
 
 ## AEO Measurement & Displacement
@@ -27,7 +26,6 @@ skill.
 | Skill | Purpose | Inputs / Outputs |
 |-------|---------|------------------|
 | [aeo-engine-scan](.claude/skills/aeo-engine-scan/SKILL.md) | Run a query bank across ChatGPT/Claude/Perplexity/Gemini/Google AIO/Copilot → one presence map | Query bank → engine_map.json/.md, Source Control Rate |
-| [citation-decay-monitor](.claude/skills/citation-decay-monitor/SKILL.md) | Re-run a saved scan, diff vs prior, flag lost/displaced citations (read-only monitor) | Prior scan → decay_report.md + deltas |
 | [cited-page-teardown](.claude/skills/cited-page-teardown/SKILL.md) | Reverse-engineer WHY a competitor URL wins a citation → build-ready displace plan | Query + cited URL → teardown + displace brief |
 | [topical-authority-linker](.claude/skills/topical-authority-linker/SKILL.md) | Audit internal links vs the planned hub-and-spoke; fix orphans | Link graph + architecture → link additions plan |
 
@@ -43,15 +41,14 @@ skill.
 
 | Skill | Purpose | Inputs / Outputs |
 |-------|---------|------------------|
-| [ahrefs-pull](.claude/skills/ahrefs-pull/SKILL.md) | Pull AI visibility data from Ahrefs Brand Radar | Brand → SOV, cited domains/pages, mentions, AI responses, deltas |
 
 ## Research
 
 | Skill | Purpose | Inputs / Outputs |
 |-------|---------|------------------|
 | [topic-deep-dive](.claude/skills/topic-deep-dive/SKILL.md) | Channel-agnostic intelligence brief for any topic | Topic → full research package feeding all formats |
-| [last30days](.claude/skills/last30days-skill-main/SKILL.md) | 30-day research across Reddit, X, YouTube, TikTok, HN, web | Topic → grounded cited report |
-| [podcast-prep](.claude/skills/podcast-prep/SKILL.md) | Guest research → interview prep package | Guest name + company URL → bio, themes, questions, screen shares |
+| last30days (global skill, `~/.claude/skills/`) | 30-day research across Reddit, X, YouTube, TikTok, HN, web | Topic → grounded cited report |
+| [ideate-content-ideas](.claude/skills/ideate-content-ideas/SKILL.md) (global skill, `~/.claude/skills/`) | Mines any repo (git history, lessons, docs, PRs) for scored build-in-public content ideas that prove the autonomous-marketing thesis | Target repo → scored idea backlog feeding blog-writer / linkedin-post-writer / youtube-script-agent |
 
 ## Insight Pipeline
 
@@ -65,6 +62,7 @@ skill.
 | Skill | Purpose | Inputs / Outputs |
 |-------|---------|------------------|
 | [linkedin-post-writer](.claude/skills/linkedin-post-writer/SKILL.md) | Write LinkedIn posts in a founder/brand voice | Insight + voice config → post + CTA variants |
+| [blog-writer](.claude/skills/blog-writer/SKILL.md) | Interview-driven, first-person build-in-public blog post (anti-slop). Sources idea from real work (git, ops recaps, lessons, transcripts) | Interview + voice config → MD source + styled HTML, with real-media slots + stats tables |
 | [storyboard-builder](.claude/skills/storyboard-builder/SKILL.md) | Build SAY/SHOW storyboard or post/blog outline from research | Deep dive → channel-appropriate outline |
 | [voice-validator](.claude/skills/voice-validator/SKILL.md) | Validate any draft against a founder's documented voice rules | Draft + voice guide → pass/fail + corrections |
 
@@ -79,8 +77,3 @@ Idea-and-packaging-first system that wraps the existing 5 YouTube agents. Real o
 | [youtube-packaging-first](.claude/skills/youtube-packaging-first/SKILL.md) | Title + thumbnail FIRST, then script to fit; chains research→validate→package→script→produce→publish | Greenlit idea → locked packaging → finished video |
 | [youtube-analytics-retro](.claude/skills/youtube-analytics-retro/SKILL.md) | Diagnose CTR vs retention vs AVD from a Studio CSV; isolate the failing lever | Studio export + packaging.md → retro.md + lesson |
 
-## Visual
-
-| Skill | Purpose | Inputs / Outputs |
-|-------|---------|------------------|
-| [excalidraw-diagram](.claude/skills/excalidraw-diagram-skill-main/SKILL.md) | Create Excalidraw diagram JSON files | Concept → Excalidraw JSON |

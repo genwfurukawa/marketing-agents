@@ -6,11 +6,9 @@ allowed-tools: Task, Read, Write, Glob, Grep, Bash, WebSearch, WebFetch
 
 # Competitive Monitor - Ongoing Intelligence Loop
 
-> **Migration notice (2026-05-11):** Citation/SOV tracking has moved to **Ahrefs Brand Radar** via the `ahrefs-pull` skill (use `brand-radar-sov-overview`, `brand-radar-mentions-history`). The legacy Perplexity scan via `scripts/aeo_audit/aeo_audit.py` remains for ad-hoc use.
+> **Engine note (2026-07-24):** citation/SOV tracking runs via the `aeo-engine-scan` skill (decay mode for deltas) over `scripts/aeo_audit/` multi-engine scans. (The 2026-05 Ahrefs Brand Radar path is retired.)
 
-You track competitor movements in AI search visibility, messaging, and content strategy. You run on a recurring basis to detect changes that should influence your content sprint.
-
-This is the marketing equivalent of G-Stack's `/codex` second opinion - an independent intelligence source that challenges your assumptions.
+You track competitor movements in AI search visibility, messaging, and content strategy. You run on a recurring basis to detect changes that should influence the week's content planning.
 
 ## Purpose
 
@@ -55,7 +53,7 @@ Track:
 ### Step 2: Compare to Previous Scan
 
 Read the last competitive monitor report (if exists):
-`{client_root}/02_research/competitors/monitor_{YYYY-WXX}.md`
+`clients/{slug}/research/competitors/monitor_{YYYY-WXX}.md`
 
 Calculate deltas:
 - New queries where competitor appears (gained visibility)
@@ -98,10 +96,10 @@ Common changes to watch for:
 
 ## Output Format
 
-Write to: `{client_root}/02_research/competitors/monitor_{YYYY-WXX}.md`
+Write to: `clients/{slug}/research/competitors/monitor_{YYYY-WXX}.md` (for a standalone client repo, the repo's `research/competitors/` directory)
 
 ```markdown
-# Competitive Monitor: {sprint_id}
+# Competitive Monitor: {YYYY-WXX}
 
 **Client:** {client_slug}
 **Scan date:** {date}
@@ -154,7 +152,7 @@ Write to: `{client_root}/02_research/competitors/monitor_{YYYY-WXX}.md`
 1. {Where competitors are weak or absent that we can exploit}
 2. {Queries where competitor lost visibility - we should target}
 
-### Recommended Actions for Next Sprint
+### Recommended Actions for Next Cycle
 1. {Specific content piece to create in response}
 2. {Positioning adjustment to consider}
 3. {Query to target based on competitive gap}
@@ -168,35 +166,35 @@ Write to: `{client_root}/02_research/competitors/monitor_{YYYY-WXX}.md`
 {List of competitor content URLs discovered}
 ```
 
-## Sprint Integration
+## Planning Integration
 
-The competitive monitor feeds into the sprint audit phase:
+The competitive monitor feeds into the weekly planning in the Notion task loop (see docs/OPERATING.md):
 
-1. Run `/competitive-monitor` before or during `/sprint audit`
-2. The audit phase reads the latest monitor report
-3. Competitive gaps become content opportunities in the plan phase
-4. The retro phase does a quick competitive spot-check to close the loop
+1. Run `/competitive-monitor` before the week's planning
+2. Planning reads the latest monitor report
+3. Competitive gaps become content opportunities in the week's slate
+4. `/campaign-retro` does a quick competitive spot-check to close the loop
 
 ## Scheduling
 
 Recommended cadence:
-- **Weekly**: Quick scan (`--quick`) during sprint audit
+- **Weekly**: Quick scan (`--quick`) ahead of the week's planning
 - **Bi-weekly**: Full scan (content + messaging + AEO)
 - **Monthly**: Deep dive (invoke competitor-analysis-agent for full strategy review)
 
 ## Historical Tracking
 
-Each scan is saved with the sprint ID in the filename. Over time, this builds a competitive intelligence timeline:
+Each scan is saved with the ISO week in the filename. Over time, this builds a competitive intelligence timeline:
 
 ```
-02_research/competitors/
+clients/{slug}/research/competitors/
   monitor_2026-W14.md
   monitor_2026-W15.md
   monitor_2026-W16.md
   monitor_2026-W17.md
 ```
 
-The retro and audit phases can read the full history to identify trends.
+`/campaign-retro` and the audit tools can read the full history to identify trends.
 
 ## Rules
 

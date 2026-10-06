@@ -105,7 +105,7 @@ Run Part B every time you onboard a new client.
 
 10. **Run the scaffolding script.**
     ```bash
-    python scripts/notion_setup_client.py "{{EXAMPLE_CLIENT_NAME}}"
+    # provision the client portal with your own tooling
     ```
     Replace `"{{EXAMPLE_CLIENT_NAME}}"` with the real client name in quotes.
 
@@ -205,7 +205,7 @@ After this SOP runs:
 - Emoji icons are hardcoded in the script: 🚀 hub, 📅 content calendar, 📦 deliverables, 📊 reports, 🧭 strategy, 🎯 positioning, 🗣️ brand voice, ⚔️ competitive.
 - The slug logic lowercases, replaces spaces with underscores, `&` with `and`, and `/` with `-`.
 - Related: [[00-index]], [[sop-template]]
-- Source of truth: `scripts/notion_setup_client.py`
+- Source of truth: your Notion workspace structure
 
 ---
 

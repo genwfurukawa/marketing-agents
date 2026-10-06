@@ -1,20 +1,18 @@
 ---
-description: Generate the monthly CEO-grade AI visibility briefing - pulls Ahrefs Brand Radar data, weekly retro deltas, and produces a standalone HTML report + strategic memo for client delivery.
+description: Generate the monthly CEO-grade AI visibility briefing - pulls weekly citation-scan data and retro deltas, and produces a standalone HTML report + strategic memo for client delivery.
 argument-hint: [--client client-slug] [--month YYYY-MM] [--competitors "name1,name2,name3"]
 allowed-tools: Task, Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch
 ---
 
 # Monthly Briefing
 
-You produce the monthly CEO-grade AI visibility briefing. One artifact: a self-contained HTML file the client double-clicks. No login, no third-party tool. Backed by Ahrefs Brand Radar data and four weekly sprint retros.
-
-This is the closing deliverable in the monthly rhythm. Without it, the system has no proof of value to the buyer.
+You produce the monthly CEO-grade AI visibility briefing. One artifact: a self-contained HTML file the client double-clicks. No login, no third-party tool. Backed by weekly citation scans (aeo-engine-scan) and four weekly retros (`/campaign-retro`).
 
 ---
 
 ## What This Produces
 
-Three artifacts in `04_briefings/{YYYY-MM}/`:
+Three artifacts in `clients/{slug}/production/briefings/{YYYY-MM}/`:
 
 1. **`report.html`** - self-contained HTML report, embedded CSS, inline chart.js for time-series. Client opens it locally or you host it.
 2. **`strategic_memo.md`** - one-page CEO-language memo. Pipeline implications, not technical metrics.
@@ -25,7 +23,7 @@ Three artifacts in `04_briefings/{YYYY-MM}/`:
 ## Inputs
 
 Optional:
-- `--client` - client slug (defaults to current ops repo brand)
+- `--client` - client slug (defaults to the active client: `CLIENT_CONFIG` env var pointing at the client's config.yaml)
 - `--month` - target month YYYY-MM (defaults to last completed month)
 - `--competitors` - override competitor list (defaults to `clients/{client}/config.yaml` competitors)
 
@@ -34,18 +32,18 @@ Optional:
 ## Process
 
 1. **Verify prerequisite data exists:**
-   - At least 4 weekly Ahrefs pulls in `research/ahrefs/`
-   - At least 4 weekly sprint retros in `00_admin/sprints/`
-   - Current month's pull-analytics output in `research/analytics/`
+   - At least 4 weekly scans in `clients/{slug}/research/aeo-scans/` (historical months may use `research/ahrefs/` pulls)
+   - At least 4 weekly retros (`/campaign-retro` output) in `clients/{slug}/intelligence/retros/`
+   - Current month's pull-analytics output in `clients/{slug}/research/analytics/`
 
    If any missing, list which and stop. Don't generate a briefing on incomplete data.
 
 2. **Read context in parallel:**
    - `clients/{client}/config.yaml` (brand, competitors, visual_style)
-   - `config/brand-brain.md`
-   - `config/voice-guide.md`
-   - The 4 weekly Ahrefs `data.json` files for the month
-   - The 4 weekly sprint retros
+   - `clients/{client}/config/brand-brain.md`
+   - `clients/{client}/config/voice-guide.md`
+   - The 4 weekly `engine_map.json` scan files for the month
+   - The 4 weekly retros
    - The latest pull-analytics summary
    - Prior month's briefing (for MoM context)
 
@@ -67,11 +65,11 @@ Optional:
    - Earned-authority placements (Reddit threads, G2 reviews, bylined content)
 
 5. **Generate next-month plan.**
-   - Top 5 content priorities (from gap-to-content-mapper-agent + Ahrefs gap queries)
+   - Top 5 content priorities (from gap-to-content-mapper-agent + the scan's gap queries)
    - Top 3 earned-source placements (from cited-domains analysis)
    - Expected score impact per priority
 
-6. **Generate the strategic memo.** One page. CEO language. Read `config/voice-guide.md` first. The memo must:
+6. **Generate the strategic memo.** One page. CEO language. Read `clients/{client}/config/voice-guide.md` first. The memo must:
    - Lead with the headline number that matters (Source Control Rate or biggest delta)
    - Explain pipeline implications, not technical metrics
    - Name competitors and where you're winning/losing vs them
@@ -93,7 +91,7 @@ Optional:
    - `{{next_month_plan}}` - 3-section plan
    - `{{strategic_memo}}` - the one-page memo, rendered inline
 
-8. **Write all outputs** to `04_briefings/{YYYY-MM}/`.
+8. **Write all outputs** to `clients/{slug}/production/briefings/{YYYY-MM}/`.
 
 9. **Notion sync.**
    - Upload the HTML to a Notion page (or attach as file)
@@ -155,9 +153,9 @@ This command runs automatically on Day 1 of each month at 6am via the `schedule`
 
 ## Related
 
-- Data source: `ahrefs-pull` skill (weekly pulls feed this monthly briefing)
+- Data source: weekly `aeo-engine-scan` runs + scorecard history (feed this monthly briefing)
 - Analytics: `/pull-analytics` (GSC + GA4)
-- Weekly retro: `/campaign-retro` or `/sprint retro`
+- Weekly retro: `/campaign-retro`
 - Gap-to-content mapping: `gap-to-content-mapper-agent`
 - HTML template: `templates/monthly_briefing/report.html.template`
-- Memo voice: `config/voice-guide.md`
+- Memo voice: `clients/{client}/config/voice-guide.md`

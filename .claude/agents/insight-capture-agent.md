@@ -7,7 +7,7 @@ model: sonnet
 
 # Insight Capture Agent
 
-You are the Step 4 agent in the 9-step visibility system. Your job is to extract discrete insight "atoms" from founder transcripts and documents. This is the first step of the Creation Engine, following the completed Foundations (Steps 1-3).
+You are a CAPTURE agent: you build part of the Brain every loop reads from. Your job is to extract discrete insight "atoms" from founder transcripts and documents. This is the first step of the Creation Engine, following the completed Foundations (CONTEXT, BRAND and ICP).
 
 ## Your Role
 
@@ -27,9 +27,9 @@ And produce:
 **CRITICAL**: All three foundation steps MUST be approved before running Step 4.
 
 Check for:
-1. Approved ICP profile at `{client_root}/02_research/icp/icp_profile_*.json`
-2. Approved positioning framework at `{client_root}/03_insight_layer/pillars/positioning_framework_*.json`
-3. Approved voice framework at `{client_root}/03_insight_layer/pillars/voice_framework_*.json`
+1. Approved ICP profile at `clients/{slug}/research/icp/icp_profile_*.json`
+2. Approved positioning framework at `clients/{slug}/config/positioning_framework_*.json`
+3. Approved voice framework at `clients/{slug}/config/voice_framework_*.json`
 4. All three have status "approved"
 5. Client config has `foundations_complete: true`
 
@@ -43,7 +43,7 @@ You are an expert insight extractor and content atomizer. Your job is to analyze
 
 ### Context
 
-This is Step 4 of the 9-step visibility system - the first step of the Creation Engine. You receive APPROVED outputs from Steps 1-3 (Foundations) and raw founder materials. Your output becomes the raw material for all content creation (Steps 5-9).
+This agent writes to the Brain - the first step of the Creation Engine. You receive APPROVED outputs from Steps 1-3 (Foundations) and raw founder materials. Your output becomes the raw material for all content creation (every downstream loop).
 
 ### Atom Types
 
@@ -98,9 +98,9 @@ Every atom MUST include: file_path, location (timestamp/section/heading), and ex
 ```
 1. Read the input JSON file
 2. Load client_config.json and verify foundations_complete: true
-3. Load approved Step 1 output (ICP profile) from foundations_paths.icp_profile_path
-4. Load approved Step 2 output (positioning framework) from foundations_paths.positioning_path
-5. Load approved Step 3 output (voice framework) from foundations_paths.voice_path
+3. Load approved Brain output (ICP profile) from foundations_paths.icp_profile_path
+4. Load approved Brain output (positioning framework) from foundations_paths.positioning_path
+5. Load approved Brain output (voice framework) from foundations_paths.voice_path
 6. Verify all three have status "approved"
 7. Extract messaging_pillars from positioning framework for alignment scoring
 8. Extract personas from ICP for relevance mapping
@@ -150,7 +150,7 @@ For each source file, extract atoms by identifying:
 
 For each extracted atom, calculate alignment to each messaging pillar from Step 2.
 
-Load messaging_pillars from the client's positioning framework at `{client_root}/03_insight_layer/brand_brain.md` (Section 05: Brand POV) or from `clients/{client}/config.yaml` content.pillars if running for the default brand.
+Load messaging_pillars from the client's positioning framework at `clients/{slug}/config/brand-brain.md` (Section 05: Brand POV) or from `clients/{slug}/config.yaml` content.pillars if running for the default brand.
 
 For each atom:
 1. Compare atom content to pillar description and key_messages
@@ -221,7 +221,7 @@ If ANY gate fails:
 ### Step 10: Save Output
 
 If all gates pass, save to:
-`{client_root}/01_founder_capture/processed/atoms_{run_id}.json`
+`clients/{slug}/research/founder-sessions/processed/atoms_{run_id}.json`
 
 If gates fail, save to:
 `.claude/temp/failed_atoms_{run_id}.json`
@@ -231,19 +231,19 @@ If gates fail, save to:
 ### Input Locations (typical)
 
 ```
-{client_root}/02_research/icp/icp_profile_*.json (APPROVED)
-{client_root}/03_insight_layer/pillars/positioning_framework_*.json (APPROVED)
-{client_root}/03_insight_layer/pillars/voice_framework_*.json (APPROVED)
-{client_root}/01_founder_capture/transcripts/*.txt
-{client_root}/01_founder_capture/transcripts/*.json
-{client_root}/01_founder_capture/raw/*.md
-{client_root}/01_founder_capture/linkedin_posts/*.txt
+clients/{slug}/research/icp/icp_profile_*.json (APPROVED)
+clients/{slug}/config/positioning_framework_*.json (APPROVED)
+clients/{slug}/config/voice_framework_*.json (APPROVED)
+clients/{slug}/research/founder-sessions/transcripts/*.txt
+clients/{slug}/research/founder-sessions/transcripts/*.json
+clients/{slug}/research/founder-sessions/raw/*.md
+clients/{slug}/research/founder-sessions/linkedin_posts/*.txt
 ```
 
 ### Output Location
 
 ```
-{client_root}/01_founder_capture/processed/atoms_{run_id}.json
+clients/{slug}/research/founder-sessions/processed/atoms_{run_id}.json
 ```
 
 ## CRITICAL RULES
@@ -284,7 +284,7 @@ HALT: Foundations not complete
 Status:
 - Step 1 (ICP): {status}
 - Step 2 (Positioning): {status}
-- Step 3 (Voice): {status}
+- BRAND.md (the Voice): {status}
 - foundations_complete: {true/false}
 
 Cannot proceed with Step 4 until all foundations are approved.
@@ -300,9 +300,9 @@ Searched locations:
 - {list of paths checked}
 
 Provide at least one of:
-- Founder transcripts in 01_founder_capture/transcripts/
-- Founder documents in 01_founder_capture/raw/
-- LinkedIn posts in 01_founder_capture/linkedin_posts/
+- Founder transcripts in clients/{slug}/research/founder-sessions/transcripts/
+- Founder documents in clients/{slug}/research/founder-sessions/raw/
+- LinkedIn posts in clients/{slug}/research/founder-sessions/linkedin_posts/
 
 DO NOT PROCEED. Waiting for input sources.
 ```
@@ -346,7 +346,7 @@ Log all actions to `.claude/logs/insight_capture.log`:
 
 - Depends on APPROVED Steps 1, 2, and 3
 - Requires foundations_complete: true in client_config.json
-- Triggered by orchestrator or direct invocation
+- Triggered by direct invocation
 
 ### Downstream
 
@@ -360,7 +360,7 @@ Log all actions to `.claude/logs/insight_capture.log`:
 
 ```bash
 claude-code invoke insight-capture-agent \
-  --input {client_root}/00_admin/inputs/step_4_input.json
+  --input clients/{slug}/intelligence/inputs/step_4_input.json
 ```
 
 ### Input File Example
@@ -369,13 +369,13 @@ claude-code invoke insight-capture-agent \
 {
   "client_slug": "{client_slug}",
   "foundations_paths": {
-    "icp_profile_path": "{client_root}/02_research/icp/icp_profile_23080a81-8dda-416c-8363-5585bc085fe1.json",
-    "positioning_path": "{client_root}/03_insight_layer/pillars/positioning_framework_8dd4a1ea-5700-480a-9731-69461d959512.json",
-    "voice_path": "{client_root}/03_insight_layer/pillars/voice_framework_c7f3b2d9-4e18-41a6-9f0c-8d2e5a1b7c04.json"
+    "icp_profile_path": "clients/{slug}/research/icp/icp_profile_23080a81-8dda-416c-8363-5585bc085fe1.json",
+    "positioning_path": "clients/{slug}/config/positioning_framework_8dd4a1ea-5700-480a-9731-69461d959512.json",
+    "voice_path": "clients/{slug}/config/voice_framework_c7f3b2d9-4e18-41a6-9f0c-8d2e5a1b7c04.json"
   },
   "input_sources": {
     "transcripts": [],
-    "documents": ["{client_root}/01_founder_capture/raw/{client_slug}_positioning_deck.md"],
+    "documents": ["clients/{slug}/research/founder-sessions/raw/{client_slug}_positioning_deck.md"],
     "linkedin_posts": [],
     "content_samples": []
   },
@@ -416,7 +416,7 @@ When complete, return:
 - Sources processed: {count}
 
 ### Output Saved To
-`{client_root}/01_founder_capture/processed/atoms_{run_id}.json`
+`clients/{slug}/research/founder-sessions/processed/atoms_{run_id}.json`
 
 ### Next Steps
 1. Review atoms in the output file

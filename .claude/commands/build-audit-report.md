@@ -1,325 +1,141 @@
 ---
-description: Chain aeo_audit.py, competitor-analysis-agent, and ai-crawler-audit-agent outputs into a unified client-facing audit package with scorecard, gap analysis, and executive summary
-argument-hint: --client client-slug --company "Company Name" --domain company.com --competitors "comp1.com,comp2.com" [--audit-dir path/to/audit/output] [--deal-size 50000]
-allowed-tools: Task, Read, Write, Glob, Grep, Bash, WebSearch, WebFetch
+description: Run the Citability Audit at any depth — Snapshot (free, 10 prompts), Gameplan (~50 prompts, six sections), Baseline (100 prompts, full deliverable set inside the Sprint), or Pulse (weekly re-run, deltas) — and package the client-facing report. One rubric (visibility-system/citability_score_rubric.md), one comparable score at every depth.
+argument-hint: --depth snapshot|gameplan|baseline|pulse --company "Company Name" --domain company.com --competitors "comp1.com,comp2.com" [--canonical-strategy /path/to/founder_strategy.md] [--engines "perplexity,chatgpt,claude,gemini"] [--deal-size 50000]
+allowed-tools: Task, Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch
 ---
 
-# Build Audit Report
+# Build Audit Report — the Citability Audit, four depths
 
-> **Migration notice (2026-05-11):** This command originally synthesized output from `scripts/aeo_audit/aeo_audit.py` (Perplexity-only). Visibility tracking is moving to **Ahrefs Brand Radar** via the `ahrefs-pull` skill. New runs should consume Ahrefs JSON in `research/ahrefs/{YYYY-MM}/`. The legacy Perplexity script remains in `scripts/aeo_audit/` for ad-hoc use.
+You run and package the Citability Audit. Six sections (Answer Test, Structure,
+Authority, Rivals, Presence, Gate), one 0-100 Citability Score, graded with
+`visibility-system/citability_score_rubric.md` (v2). The same rubric powers
+every depth, so a prospect's free Snapshot number is directly comparable to
+their day-90 Pulse — that continuity is the sales story.
 
-You produce a unified, client-facing audit package from raw audit data. You wrap existing tools - you never replace them. Your job is synthesis and presentation.
+> Engine access (2026-07-24): scans run through
+> `scripts/aeo_audit/aeo_audit.py --engines perplexity,chatgpt,claude,gemini`
+> (keys: PERPLEXITY_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY,
+> GOOGLE_GENAI_API_KEY). Google AI Overviews optionally via `google_aio`
+> (SerpAPI/DataForSEO) or the documented sampled method in aeo-engine-scan.
+> The Ahrefs Brand Radar path is retired; historical pulls live in
+> `research/ahrefs/` as the pre-2026-07 baseline record.
 
-## What This Command Produces
+## The four depths
 
-Three deliverables, written to the client workspace:
+| Depth | Product | Scope | Turnaround |
+|---|---|---|---|
+| `snapshot` | Free audit (sales tool) | 10 prompts, ChatGPT + Perplexity, score + top 3 gaps | Same day, automated |
+| `gameplan` | $500 tripwire | ~50 prompts, 4 engines, all six sections graded, plan + 30-min walkthrough | 1 week |
+| `baseline` | Inside the $4,500 Sprint | 100 prompts, 4 engines, all six sections, full deliverable set, 90-day plan | Days 3-10 of Sprint |
+| `pulse` | Inside the Loop | Full portfolio re-run, deltas vs Baseline | Weekly, automated |
 
-1. **Visibility Scorecard** - Table comparing client vs competitors across 7 query categories and 3 AI platforms
-2. **Gap Analysis Document** - Top 5 visibility gaps, each mapped to a specific AEO page type template with the actual AI answer shown
-3. **Executive Summary** - 3 paragraphs: current state, competitive gap, recommended next steps with pipeline estimate
+## Prerequisites (verify, don't assume)
 
-## Prerequisites
+All depths:
+1. `clients/{client}/config.yaml` populated (brand identifiers, ICP basics, locked competitors). In a standalone client repo, paths resolve from the repo root.
+2. `.env` engine keys for the engines you'll scan. Missing keys: scan what's available and label skipped engines — never silently drop one; the rubric marks unscanned engines "pending".
+3. `lessons.md` read.
 
-Before running this command, the following must already exist:
+Baseline additionally:
+4. **Canonical founder strategy doc** via `--canonical-strategy` — the audit treats it as canonical truth (the two AEO games, ICP precision, locked entity description, the founder's baseline prompts VERBATIM, exclusions, proprietary data, pillar weights, voice guardrails). If missing pieces, halt and ask the founder. Do not invent.
+5. `clients/{client}/config/icp-psyche.md` populated.
 
-1. **AEO audit output** from `scripts/aeo_audit/aeo_audit.py` - Look for:
-   - `audit-report-{company}.md` (markdown report)
-   - `domain-visibility-{company}.csv` (domain ranking data)
-   - `raw-results-{company}.json` (full API response data)
-2. **Client workspace** at `../clients/{client_slug}/`
-3. **clients/{client}/config.yaml** loaded from ops repo root
+Pulse additionally:
+6. A prior Baseline (or Pulse) scan with its saved prompt bank — a diff is only valid on the identical prompt set.
 
-If audit data doesn't exist yet, tell the user to run the audit first:
-```
-python scripts/aeo_audit/aeo_audit.py audit --company "{company}" --domain "{domain}" --competitors "{competitors}"
-```
+## Depth: snapshot
 
-## Input Resolution
+1. Build 10 high-intent prompts from the five SOP query types ("what is {category}", "best {category} for {ICP}", "{brand} vs {competitor}", "how to {problem}", "{category} pricing") — use `/build-query-bank` logic, don't hand-wave.
+2. Scan ChatGPT + Perplexity: `aeo_audit.py batch --engines perplexity,chatgpt`.
+3. Score the Answer Test sample per the rubric; spot-check Gate (robots.txt fetch) and Structure (top page).
+4. Output one page: score + grade, the top 3 gaps with the actual AI answer shown for each, and who wins instead. Format per the outbound hook: "{Competitor} gets recommended in {X} of them. You show up in {Y}."
+5. **Snapshot reports auto-generate but NEVER auto-send.** Human review, always.
 
-Parse inputs in this priority order:
+## Depth: gameplan
 
-### Required
-- `--company`: Company display name (e.g., "Avoma")
-- `--domain`: Client's primary domain (e.g., "avoma.com")
-- `--competitors`: Comma-separated competitor domains (e.g., "gong.io,chorus.ai")
+1. Prompt bank: ~50 prompts via `/build-query-bank` (all five query types, tiered, tagged).
+2. Scan all 4 engines. Log presence / position / accuracy / sentiment per prompt per engine; save raw outputs.
+3. Grade ALL six sections per the rubric: run `ai-crawler-audit-agent` (Gate), extractability checklist on priority pages (Structure), trust-signal grading (Authority), per-losing-prompt winner + format classification (Rivals), off-site inventory (Presence).
+4. Deliverable: written report (six sections, each finding as issue / evidence / impact / fix / priority) ending in the exact game plan the Sprint would execute, plus the 30-minute walkthrough agenda.
 
-### Optional
-- `--client`: Client workspace slug. Defaults to lowercase company name.
-- `--audit-dir`: Path to existing audit output. Defaults to `scripts/aeo_audit/results/`
-- `--deal-size`: Client's stated average deal size in USD. Used for pipeline estimate in executive summary. Defaults to $50,000.
+## Depth: baseline (the full engagement audit — inside the Sprint)
 
-### Config Loading
-Before any work, load:
-1. `clients/{client}/config.yaml` from ops repo root
-2. `lessons.md` from ops repo root
-3. Client Brand Brain at `../clients/{client_slug}/03_insight_layer/brand_brain.md` (if exists)
+Phased execution (salvaged from the retired /audit-blueprint workflow, regraded to the v2 rubric):
 
-## Execution Flow
+**Phase 0 — Pre-flight:** verify prerequisites, read canonical strategy doc + lessons.md, create `research/audits/{YYYY-MM-DD}/{_inputs,_raw,03_citation_scan/{perplexity,chatgpt,claude,gemini},07_content_gaps}`.
 
-### Phase 1: Collect Raw Data (read-only)
+**Phase 1 — Foundation (parallel):** update config.yaml + icp-psyche.md from the canonical doc; WebFetch top site pages → `_inputs/site_extract.md`; research the founder's public voice corpus; run `icp-definition-agent` → `positioning-agent` → `competitor-analysis-agent` (locked competitor set).
 
-Read all existing audit artifacts. Do NOT re-run audits.
+**Phase 2 — Prompt bank (1 human step):** run `audience-question-miner-agent` (per ICP); build the 100-prompt bank — founder baseline prompts VERBATIM (they are the success metric) + supplementary head-to-heads, category definers, wedge prompts; tag every prompt (tier, category, intent, source). Output `02_query_bank.md/.csv/.json`. **Stop and confirm the bank with the user before scanning.**
 
-**Step 1.1** - Read AEO audit output:
-- Parse `raw-results-{company}.json` for query-by-query results
-- Parse `domain-visibility-{company}.csv` for domain rankings
-- Parse `audit-report-{company}.md` for the existing analysis
-- Extract: visibility_rate, avg_position, visibility_score, gaps, intent_coverage, competitor_stats
+**Phase 3 — Data pulls (parallel):** multi-engine scan `aeo_audit.py batch --input 02_query_bank.csv --engines perplexity,chatgpt,claude,gemini --output 03_citation_scan/`; `ai-crawler-audit-agent` → `_raw/ai_crawler_audit.md`; `/pull-analytics` for GA4/GSC evidence; optional `google_aio` scan. All raw data in `_raw/`.
 
-**Step 1.2** - Run competitor-analysis-agent via Task tool:
-- Input: Company name, competitor list, client domain
-- Depth: Standard
-- Extract: positioning gap map, content gaps, messaging comparison
+**Phase 4 — Score:** grade all six sections with the v2 rubric, every sub-criterion traced to `_raw/`/`_inputs/` evidence. No estimating; unmeasurable = "pending". Output `01_citability_score.md`.
 
-**Step 1.3** - Run ai-crawler-audit-agent via Task tool:
-- Input: Client website URL
-- Extract: crawler access score (0-100), structured data findings, priority fix list
+**Phase 5 — Deliverables:**
+1. `01_citability_score.md` — the scorecard (Phase 4)
+2. `02_query_bank.*` — the 100-prompt bank (Phase 2)
+3. `03_citation_scan/` — raw per-engine results (Phase 3)
+4. `04_gap_matrix.md` — competitors × prompts × engines, WIN/LOSS/ABSENT
+5. `05_citation_sources.md` — top cited domains across engines (Presence inventory; fixing off-site stays out of scope)
+6. `07_content_gaps/01..10_*.md` — 10 content briefs (per gap: current AI answer, winning competitor + format, displacement strategy, page structure per `templates/aeo_page_types/`, FAQ, schema, links, proprietary-data hooks, impact, voice notes)
+7. `clients/{client}/config/brand-brain.md` — populate the 12 sections from Phase 1 inputs
+8. `09_90day_roadmap.md` — the 90-day plan: critical fixes, high-impact moves, quick wins, in order, honoring founder pillar weights; score-movement target per month
+9. `10_strategic_memo.md` — 3-5pp CEO synthesis (headline, scorecard table, top 5 findings, first-30-day move, 90/180-day projections)
+10. `00_INDEX.md` — navigable wrapper
 
-Run Steps 1.2 and 1.3 in PARALLEL.
+**Phase 6 — Wrap:** verify all deliverables non-empty, capture new lessons via `/compound`, surface the headline + top 3 first-30-day actions.
 
-### Phase 2: Build Visibility Scorecard
+## Depth: pulse
 
-Construct a comparison table using data from Phase 1.
+1. Re-run the FULL prompt portfolio with the identical bank + engines (invoke `aeo-engine-scan` decay mode — it owns the diff/classification logic).
+2. Compute per-prompt deltas (presence, position, accuracy, sentiment) vs Baseline and vs last week; update share of voice.
+3. Attribute movement where possible: map each new citation to the shipped asset or fix that likely earned it, with ship date as evidence. No invented attribution.
+4. Output feeds the Monday report: what moved / what it means / what happens next. Log raw results + deltas to the client repo; flag anomalies.
+5. Quarterly: full re-grade of all six sections + prompt portfolio refresh (retire dead prompts, add emerging ones).
 
-**7 Query Categories** (map from AEO audit intent_coverage):
-1. Brand queries ("what is {company}", "{company} reviews")
-2. Category queries ("best {category} tools", "top {category} software")
-3. Problem queries ("how to solve {pain_point}")
-4. Comparison queries ("{company} vs {competitor}")
-5. Alternative queries ("{competitor} alternatives")
-6. Integration queries ("{company} integrations with {tool}")
-7. Industry queries ("{category} for {industry}")
+## Packaging (client-facing synthesis — all depths above snapshot)
 
-**3 Platforms** (from AEO audit raw results, tag by source):
-- Perplexity (primary - from aeo_audit.py API data)
-- ChatGPT (if available from prospect-scorecard or manual queries)
-- Google AI Overviews (if available)
-
-Note: If only Perplexity data exists, label the scorecard as "Perplexity Retrieval Index" and note that ChatGPT and Google AI Overviews require separate audit runs.
-
-**Scorecard Table Format:**
-
-```markdown
-# AI Search Visibility Scorecard
-
-**Company:** {company}
-**Date:** {YYYY-MM-DD}
-**Queries Analyzed:** {count}
-**Data Source:** Perplexity Search API
-
-## Overall Scores
-
-| Company | Visibility Score | Grade | Citation Rate | Avg Position |
-|---------|-----------------|-------|---------------|--------------|
-| {client} | {score}/100 | {A-F} | {X}% | {X.X} |
-| {competitor_1} | {score}/100 | {A-F} | {X}% | {X.X} |
-| {competitor_2} | {score}/100 | {A-F} | {X}% | {X.X} |
-| {competitor_3} | {score}/100 | {A-F} | {X}% | {X.X} |
-
-## Score by Query Category
-
-| Category | {client} | {comp_1} | {comp_2} | {comp_3} | Client Gap |
-|----------|----------|----------|----------|----------|------------|
-| Brand | {0-3} | {0-3} | {0-3} | {0-3} | {+/- vs leader} |
-| Category | {0-3} | {0-3} | {0-3} | {0-3} | {+/- vs leader} |
-| Problem | {0-3} | {0-3} | {0-3} | {0-3} | {+/- vs leader} |
-| Comparison | {0-3} | {0-3} | {0-3} | {0-3} | {+/- vs leader} |
-| Alternative | {0-3} | {0-3} | {0-3} | {0-3} | {+/- vs leader} |
-| Integration | {0-3} | {0-3} | {0-3} | {0-3} | {+/- vs leader} |
-| Industry | {0-3} | {0-3} | {0-3} | {0-3} | {+/- vs leader} |
-
-## Competitive Displacement Score
-
-For each query where a competitor appears and the client doesn't, calculate displacement:
-
-| Query | Client Present? | Displaced By | Competitor Position | Revenue at Risk |
-|-------|----------------|--------------|--------------------:|----------------:|
-| {query} | No | {competitor} | #{position} | ${deal_size * displacement_factor} |
-
-**Displacement Factor:** Position 1-3 = 0.15x deal size, Position 4-7 = 0.08x, Position 8+ = 0.03x
-
-## Technical Readiness
-
-| Dimension | Score | Status |
-|-----------|------:|--------|
-| AI Crawler Access | {X}/30 | {status} |
-| Sitemap Health | {X}/10 | {status} |
-| Structured Data | {X}/30 | {status} |
-| Page Structure | {X}/30 | {status} |
-| **Infrastructure Total** | **{X}/100** | **{rating}** |
-```
-
-**Scoring methodology for category scores (0-3 scale):**
-- 3 = Client appears in top 3 results for majority of queries in this category
-- 2 = Client appears in top 10 for some queries
-- 1 = Client mentioned but not in primary results
-- 0 = Client absent from all queries in this category
-
-### Phase 3: Build Gap Analysis Document
-
-Take the top 5 visibility gaps from the AEO audit (queries where competitors appear but client is absent, sorted by competitor count descending).
-
-For each gap, produce:
+**Scorecard table:**
 
 ```markdown
-# Visibility Gap Analysis
-
-## Gap #{n}: {query}
-
-**Severity:** {Critical / High / Medium}
-**Query Intent:** {intent_stage}
-**Competitors Present:** {list of competitor domains appearing}
-**Client Status:** Not cited in any AI response
-
-### What AI Currently Answers
-
-> {Paste the actual AI-generated answer from raw-results JSON, or summarize the top 3 results. Show what the buyer sees when they search this query.}
-
-**Sources Cited:**
-1. {domain_1} - Position 1 - "{snippet}"
-2. {domain_2} - Position 2 - "{snippet}"
-3. {domain_3} - Position 3 - "{snippet}"
-
-### Recommended Content Type
-
-**Template:** `templates/aeo_page_types/{recommended_template}.md`
-**Page Type:** {What Is / Best Tools / Alternatives / Comparison / Integration / Statistics / Glossary}
-
-**Why this page type:** {1-2 sentences connecting the query intent to the template's target pattern}
-
-### Content Brief (Starter)
-
-- **Target H1:** {suggested title}
-- **Target query cluster:** {3-5 related queries this page would also capture}
-- **Key entities to include:** {companies, products, concepts that must appear}
-- **Differentiation angle:** {what the client can say that competitors can't - pull from competitor-analysis-agent positioning gap map}
-- **Schema markup:** {recommended JSON-LD type from aeo-page-brief-agent patterns}
+| Company | Citability Score | Grade | Citation Rate | Share of Voice |
+|---------|-----------------:|-------|---------------|----------------|
+| {client} | {score}/100 | {band} | {X}% | {X}% |
+| {competitor_1} | {partial-score note} | — | {X}% | {X}% |
 ```
 
-**Gap-to-template mapping rules:**
-- "what is" / definition queries -> `what_is_definition.md`
-- "best tools" / "top software" -> `best_tools_list.md`
-- "{product} alternatives" -> `alternatives.md`
-- "{product A} vs {product B}" -> `product_comparison.md`
-- "integrates with" / "{product} + {product}" -> `integration.md`
-- "{topic} statistics" / "{topic} data" -> `statistics_research.md`
-- Term-specific / glossary queries -> `glossary.md`
-- Problem/solution queries -> `what_is_definition.md` (closest match - note that problem-solution template is not yet built)
-- Category/buyer guide queries -> `best_tools_list.md` (closest match)
-- ROI/business case queries -> `statistics_research.md` (closest match)
+Competitors get partial scores only where data is observable (Answer Test,
+Rivals, Presence) — labeled as partial, never padded.
 
-### Phase 4: Build Executive Summary
+**Gap analysis** (top 5, from the gap matrix): per gap show the ACTUAL AI
+answer from the raw JSON (never paraphrase), sources cited, the winning
+format, the mapped page-type template (only templates that exist in
+`templates/aeo_page_types/`), and a starter brief.
 
-Write exactly 3 paragraphs. No headers inside the summary. Direct, specific, written for a CEO who will read this in 2 minutes.
+**Executive summary** — exactly 3 paragraphs (current state / competitive gap /
+recommended next steps), specific numbers only. Pipeline estimate formula:
+`quarterly_pipeline = displacement_count × deal_size × 0.05 × 3`, always
+labeled "directional estimate", never a guarantee.
 
-```markdown
-# Executive Summary: {company} AI Search Visibility
+## Quality gates
 
-**Prepared for:** {company} leadership
-**Date:** {YYYY-MM-DD}
-**Prepared by:** {brand}
+- [ ] Every number traces to a saved raw result (no fabricated metrics, no findings without evidence)
+- [ ] Founder baseline prompts included verbatim (baseline depth)
+- [ ] Engines labeled measured / sampled / pending / skipped — no silent drops
+- [ ] Schema findings from rendered checks only (a static-fetch "no schema" is a false finding)
+- [ ] Accuracy misses logged as their own fix category
+- [ ] Gap briefs map only to templates that exist
+- [ ] No banned phrases (`voice.never_say` + lessons.md) in anything client-facing
+- [ ] Pipeline estimate labeled directional with the formula shown
+- [ ] **Human review by Gen before anything reaches the client. Never auto-send. Snapshot included.**
 
-{Paragraph 1 - Current State}
-{Company} currently scores {score}/100 on AI search visibility across {X} queries tested against {platform}. Your brand appears in {visibility_rate}% of buyer-intent queries in your category, with an average citation position of {avg_position}. {X} of {total} queries return results that include at least one competitor but not {company}. Your technical infrastructure scores {crawler_score}/100 for AI crawler accessibility - {interpretation of what that means practically}.
+## Output routing
 
-{Paragraph 2 - Competitive Gap}
-{Top competitor} leads your category with a visibility score of {score}/100, appearing in {rate}% of the queries where you are absent. The highest-impact gaps are in {category_1} and {category_2} queries - the exact searches your buyers run before building a vendor shortlist. {Specific example: "When a buyer searches '{example_query}', {competitor} appears at position {X} while {company} is not cited."} This pattern repeats across {X} of the {Y} queries we tested. Each invisible query is a conversation you're not part of.
+Baseline: `research/audits/{YYYY-MM-DD}/` (numbered deliverables above).
+Snapshot/Gameplan: `research/audits/{YYYY-MM-DD}_{depth}.md` (single file).
+Pulse: `research/aeo-scans/{YYYY-MM-DD}_decay/` (via engine-scan decay mode).
+All paths resolve from the client repo root (or `clients/{slug}/` for the demo).
 
-{Paragraph 3 - Recommended Next Steps + Pipeline Estimate}
-Closing these {top_gap_count} gaps requires {X} new AEO-structured pages targeting the query categories where competitors currently displace you. Based on your stated deal size of ${deal_size} and the {displacement_count} queries where competitors appear instead of you, the estimated pipeline exposure is ${pipeline_estimate} per quarter. We recommend starting with {gap_1_content_type} and {gap_2_content_type} pages - these two content types address {X}% of your visibility gaps. Expected timeline to measurable improvement: 60-90 days from publication, based on AI search reindexing cycles.
-```
-
-**Pipeline estimate formula:**
-```
-quarterly_pipeline = displacement_count * deal_size * 0.05 * 3
-```
-Where 0.05 = conservative 5% conversion rate from AI search impression to pipeline, and 3 = quarterly multiplier.
-
-Always label this as "directional estimate" - never present as a guarantee.
-
-## Output Routing
-
-Write all 3 deliverables to the client workspace:
-
-```
-../clients/{client_slug}/04_content_engine/audits/
-  {YYYY-MM-DD}_visibility_scorecard.md
-  {YYYY-MM-DD}_gap_analysis.md
-  {YYYY-MM-DD}_executive_summary.md
-```
-
-Also generate a combined single-file version for easy sharing:
-
-```
-../clients/{client_slug}/04_content_engine/audits/
-  {YYYY-MM-DD}_full_audit_report.md
-```
-
-The combined file concatenates all 3 deliverables with page breaks (`---`) between sections, plus a table of contents at the top.
-
-### Metadata Frontmatter
-
-Every output file starts with:
-
-```yaml
----
-type: audit-report
-component: scorecard | gap-analysis | executive-summary | full-report
-company: {company}
-domain: {domain}
-competitors: [{competitor_list}]
-queries_analyzed: {count}
-visibility_score: {score}
-grade: {A-F}
-created: {ISO-8601}
-audit_source: scripts/aeo_audit/
----
-```
-
-## Quality Checks
-
-Before writing final output, verify:
-
-1. [ ] All competitor scores are calculated from real data, not estimated
-2. [ ] Gap analysis references actual AI answers from raw-results JSON
-3. [ ] Each gap maps to a real template in `templates/aeo_page_types/`
-4. [ ] Executive summary contains specific numbers, not vague claims
-5. [ ] Pipeline estimate is labeled as "directional" and shows the formula
-6. [ ] No banned phrases from clients/{client}/config.yaml voice.never_say
-7. [ ] No AI slop verbs or adjectives from output style rules
-8. [ ] Technical infrastructure score comes from ai-crawler-audit-agent, not invented
-9. [ ] Displacement scores use the defined formula, not arbitrary numbers
-10. [ ] Combined report has working table of contents with anchor links
-
-## Presentation Checkpoint
-
-After generating all deliverables, present a summary to the user:
-
-```
-Audit report generated for {company}:
-
-Visibility Score: {score}/100 ({grade})
-Top Competitor: {name} at {score}/100
-Gaps Found: {count} ({critical_count} critical)
-Pipeline Exposure: ${estimate}/quarter (directional)
-Pages Recommended: {count} across {template_count} content types
-
-Files written:
-- {path_to_scorecard}
-- {path_to_gap_analysis}
-- {path_to_executive_summary}
-- {path_to_combined}
-
-Review the scorecard first. Approve before sending to client.
-```
-
-Wait for user approval before marking complete. Never auto-send to client.
-
-## Rules
-
-1. **Wrap, don't replace.** This command reads output from aeo_audit.py and agents. It never re-runs the audit itself.
-2. **Real data only.** Every number in the scorecard must trace back to actual query results. If data is missing for a platform or category, show "N/A" - never estimate.
-3. **One pipeline formula.** Use the displacement formula defined above. Don't invent alternative calculations.
-4. **Template mapping must be exact.** Only map gaps to templates that exist in `templates/aeo_page_types/`. If no template fits, say "No existing template - requires new page type."
-5. **Voice rules apply.** The executive summary is client-facing content. Run it against clients/{client}/config.yaml voice.never_say and lessons.md before finalizing.
-6. **Show the actual AI answer.** The gap analysis is powerful because it shows the CEO what buyers see today. Pull real snippets from the raw JSON - don't paraphrase.
+After generating, present the summary (score, grade, top gaps, files written)
+and wait for approval. Never mark complete without the human gate.

@@ -72,12 +72,13 @@ Instructions:
 ### Phase 1: Load Client Foundations
 
 ```
-1. Resolve client root from clients_registry.json
-2. Load ICP profile from {client_root}/01_icp_category/
-3. Load positioning framework from {client_root}/02_positioning_pov/
-4. Load brand brain from {client_root}/03_insight_layer/brand_brain.md
-5. Load competitor data from {client_root}/04_content_engine/research/
-6. Check for existing AEO pages at {client_root}/04_content_engine/aeo_pages/
+1. Resolve the active client via the active client convention: explicit client slug argument,
+   else CLIENT_CONFIG env var pointing at the client's config.yaml
+2. Load ICP profile from clients/{slug}/config/icp-psyche.md (plus the icp block in config.yaml)
+3. Load positioning from clients/{slug}/config.yaml and the positioning sections of the brand brain
+4. Load brand brain from clients/{slug}/config/brand-brain.md
+5. Load competitor data from clients/{slug}/research/
+6. Check for existing AEO pages at clients/{slug}/production/aeo_pages/
 ```
 
 If foundations are missing, STOP and report which steps need to be completed first.
@@ -166,7 +167,7 @@ Score and rank all recommended pages by:
 
 ```
 1. Compile into output JSON matching content_architecture_output.json schema
-2. Save to: {client_root}/04_content_engine/aeo_pages/architecture/{date}_architecture_{run_id}.json
+2. Save to: clients/{slug}/production/aeo_pages/architecture/{date}_architecture_{run_id}.json
 3. Also save a readable markdown summary alongside the JSON
 ```
 
@@ -230,7 +231,7 @@ Score and rank all recommended pages by:
 ## Next Steps
 
 1. Start with page #{1} - {page description}
-2. Use `/aeo-page {type} "{topic}" --client {slug}` to generate each page
+2. Use the aeo-page-generator skill (14 page types, auto-chained validation) to generate each page
 3. Run through AEO optimizer after generation
 4. Publish in the recommended sequence
 ```
@@ -248,11 +249,12 @@ Score and rank all recommended pages by:
 
 ### Client Not Found
 ```
-HALT: Client "{client_slug}" not found in clients_registry.json.
+HALT: Client "{client_slug}" could not be resolved. Pass an explicit client slug,
+or set CLIENT_CONFIG to the client's config.yaml.
 
-Available clients: {list}
+Available clients: {list of directories under clients/}
 
-Use /init_client to scaffold a new client workspace.
+Use /clone-ops to scaffold a new client workspace.
 ```
 
 ### Foundations Incomplete
@@ -270,7 +272,7 @@ Complete Steps 1-3 before running the architecture planner.
 WARNING: No competitor data found for {client_slug}.
 
 Options:
-1. Provide competitors manually: /architect {client} --competitors "Competitor A, Competitor B"
-2. Run competitor analysis first: /competitor-analysis {client}
+1. Provide competitors manually: "Competitor A, Competitor B"
+2. Run the competitor-analysis-agent first
 3. Proceed without competitor analysis (reduces alternatives and comparison page recommendations)
 ```

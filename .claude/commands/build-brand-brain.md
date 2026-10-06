@@ -17,25 +17,25 @@ Generate a complete 12-section Brand Brain for a client. The Brand Brain teaches
 
 ### Step 1: Validate Client Workspace
 
-Resolve the client root path from `clients_registry.json`, or default to `../{client_root}/`.
+Resolve the client root via the active client convention: use the explicit client slug argument if given, else the `CLIENT_CONFIG` env var pointing at the client's `config.yaml`. `{client_root}` is `clients/{slug}/` in this repo, or the repo root for a standalone client repo at `~/clients/{slug}/`.
 
 1. Check that `{client_root}/` exists
-2. Check for existing Brand Brain at `{client_root}/03_insight_layer/brand_brain.md`
+2. Check for existing Brand Brain at `{client_root}/config/brand-brain.md`
    - If found, ask user to confirm overwrite
-3. Read client config from `{client_root}/00_admin/config.json`
+3. Read client config from `{client_root}/config.yaml`
 
 ### Step 2: Gather Existing Inputs
 
 Pull from completed pipeline steps if available:
 
-1. **Step 1 output** (ICP): Check `{client_root}/02_research/icp/icp_profile_*.json`
+1. **ICP inputs**: Check `{client_root}/research/icp/` and `{client_root}/config/icp-psyche.md`
    - Populates: Section 03 (ICP), Section 04 (Competitors)
-2. **Step 2 output** (Positioning): Check `{client_root}/03_insight_layer/pillars/positioning_framework_*.json`
+2. **Positioning inputs**: Check `{client_root}/config/pillars.md` and the `positioning` section of `{client_root}/config.yaml`
    - Populates: Section 05 (Brand POV)
-3. **Founder content**: Check `{client_root}/01_founder_capture/`
+3. **Founder content**: Check `{client_root}/research/founder-sessions/`
    - LinkedIn posts, transcripts, raw captures
    - Populates: Sections 06-08, 10 (voice, style, examples)
-4. **Existing brand docs**: Check `{client_root}/00_admin/brand/`
+4. **Existing brand docs**: Check `{client_root}/brand/`
 
 ### Step 3: Research (if --url provided)
 
@@ -76,14 +76,14 @@ For any section that cannot be confidently populated, mark with `[NEEDS INPUT: d
 
 ### Step 6: Save the Unified Brand Brain
 
-Save to: `{client_root}/03_insight_layer/brand_brain.md`
+Save to: `{client_root}/config/brand-brain.md`
 
-### Step 7: Extract to Step 3 Subfolders
+### Step 7: Extract to Config Subfolders
 
 Create the subfolder structure and extract sections:
 
 ```
-{client_root}/03_insight_layer/
+{client_root}/config/
   voice_rules/
     voice_rules.md          <- Sections 07 + 08
     ctas.md                 <- Section 11
@@ -104,7 +104,7 @@ Create the subfolder structure and extract sections:
 
 Each extracted file should include a header:
 ```markdown
-<!-- Extracted from brand_brain.md Section XX — Do not edit directly. Edit brand_brain.md and re-extract. -->
+<!-- Extracted from brand-brain.md Section XX. Do not edit directly. Edit brand-brain.md and re-extract. -->
 ```
 
 ### Step 8: Report
@@ -115,11 +115,11 @@ Output a summary:
 ## Brand Brain Complete
 
 **Client**: {client-name}
-**Saved to**: {client_root}/03_insight_layer/brand_brain.md
+**Saved to**: {client_root}/config/brand-brain.md
 
 ### Sources Used
-- [x/o] Step 1 ICP output
-- [x/o] Step 2 Positioning output
+- [x/o] ICP inputs
+- [x/o] Positioning inputs
 - [x/o] Website research
 - [x/o] Founder content samples
 - [x/o] Existing brand docs
@@ -127,7 +127,7 @@ Output a summary:
 ### Section Status
 | Section | Status | Source |
 |---------|--------|--------|
-| 01: Brand Identity | Complete/Needs Input | Research / Step 1 / Manual |
+| 01: Brand Identity | Complete/Needs Input | Research / ICP inputs / Manual |
 | 02: Products | ... | ... |
 | ... | ... | ... |
 
@@ -141,14 +141,12 @@ Output a summary:
 ### Next Steps
 1. Review sections marked [NEEDS INPUT]
 2. Add founder writing samples to Section 10 (Reference Examples)
-3. Run /sync-templates to push the template to other clients
-4. When satisfied, run the voice-agent to generate voice_framework JSON
+3. Done - the Brand Brain is the source of truth for voice; config extractions derive from it
 ```
 
 ## Important Notes
 
 - The Brand Brain is markdown (.md) for portability - it can be copy-pasted into Claude Projects
-- The unified `brand_brain.md` is the source of truth; subfolders are derived extractions
-- The voice-agent still produces `voice_framework_{run_id}.json` for structured agent consumption
+- The unified `brand-brain.md` is the source of truth; subfolders are derived extractions
 - Mark ALL gaps with `[NEEDS INPUT: ...]` rather than inventing content
 - Include the standard 40+ AI cliche banned words in Section 09 for every client

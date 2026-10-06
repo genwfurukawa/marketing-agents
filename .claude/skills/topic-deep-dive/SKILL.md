@@ -8,11 +8,11 @@ trigger: Manual - when a topic is selected from the queue
 inputs:
   topic: chosen topic
   keyword: primary keyword
-  pillar: which pillar (aeo / ai_marketing / claude_code / b2b_saas)
+  pillar: which pillar (a slug from the active client's config.yaml content.pillars)
   funnel_stage: awareness / education / activation / conversion
   target_channels: list of channels (youtube, linkedin, blog)
 outputs:
-  path: research/{keyword-slug}/deep-dive.md
+  path: clients/{client}/research/{keyword-slug}/deep-dive.md
   format: markdown
 ---
 
@@ -27,11 +27,11 @@ creating any content - video, LinkedIn post, or blog article.
 1. Read `clients/{client}/config.yaml` for pillars (content.pillars), ICP details, positioning, and voice rules
 2. Read `clients/{client}/config/voice-guide.md` for Gen's voice patterns and tone
 3. Read `lessons.md` for accumulated corrections
-4. If running for a specific client, read `/clients/[slug]/context.md`
+4. Read `clients/{client}/config/icp-psyche.md` for the deep ICP profile. Resolve the active client via an explicit client slug argument, else the `CLIENT_CONFIG` env var pointing at the client's config.yaml
 
 ## Research Process
 
-Execute these 6 research steps in order. Be thorough. Every stat needs a source.
+Execute these 6 research steps in order. Every stat needs a source.
 Every URL needs to be real.
 
 ### Step 1: AI Citation Landscape
@@ -125,7 +125,7 @@ For each related query, tag how to use it:
 ### Step 6: Client Offer Tie-Back
 
 Identify the natural connection to the client's offer (from config.yaml):
-- Which offer tier relates (Authority Vault / Visibility Engine / Growth Loop)
+- Which offer tier relates (use the offers defined in the active client's config.yaml)
 - The logical next step for someone who watches/reads this content
 - NOT a pitch - the organic "if you want this done for you" moment
 - A specific proof point or case study to reference (if available)

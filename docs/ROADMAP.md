@@ -2,7 +2,7 @@
 
 The toolkit ships a complete AEO practitioner stack today: foundations → research →
 14 page-type generation → checker/injector/schema gates → multi-engine measurement →
-displacement → off-site authority → 9-dimension scoring. This roadmap is what comes
+displacement → off-site authority → Citability scoring. This roadmap is what comes
 next — the emerging surface area of Answer Engine Optimization that's real but
 earlier in its maturity curve.
 
@@ -15,10 +15,10 @@ shows where AEO is heading, not just where it is.
 - **Research** — topic deep-dives, audience question mining, competitor analysis, query banks
 - **Page generation** — 14 AEO page types + checker → injector → voice → schema chain
 - **Technical readiness** — crawler audit → `ai-crawler-fix` + `llms-txt-generator`
-- **Measurement** — `aeo-engine-scan` (6 engines), `ahrefs-pull` (Brand Radar), `citation-decay-monitor`
+- **Measurement** — `aeo-engine-scan` (multi-engine, with decay mode for tracking over time)
 - **Displacement** — `cited-page-teardown`, `topical-authority-linker`
 - **Off-site authority** — `community-seeding`, `original-research-designer`, `knowledge-graph-builder`
-- **Scoring** — 9-dimension AI Visibility Score rubric, prospect scorecard
+- **Scoring** — Citability Score rubric (six sections, 0-100), prospect scorecard
 
 ## Next (second-tier modules)
 
@@ -33,7 +33,7 @@ on multi-turn is less stable and harder to measure reproducibly than single quer
 AI answers increasingly surface images, and multimodal models read them. A module for
 image-level optimization: descriptive alt text written for extraction, `ImageObject`
 schema, filename/caption signals, and diagram/chart packaging so visual assets
-(including the ones the `excalidraw-diagram` skill produces) can themselves be cited.
+(diagrams, charts, annotated screenshots) can themselves be cited.
 Why it's next-tier: image citation behavior in answer engines is still emerging and
 varies widely by engine.
 

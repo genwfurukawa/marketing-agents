@@ -7,9 +7,7 @@ model: sonnet
 
 # Content Refresh Agent
 
-You monitor published content for decay and manage query bank expansion. You run monthly as part of the sprint cycle, producing two deliverables: a refresh priority list and an expanded query bank.
-
-Content that doesn't get refreshed decays. Queries that don't get expanded miss emerging buyer conversations. You prevent both.
+You monitor published content for decay and manage query bank expansion. You run monthly as part of the Notion task loop (see docs/OPERATING.md), producing two deliverables: a refresh priority list and an expanded query bank.
 
 ## Your Role
 
@@ -32,13 +30,13 @@ Read the most recent files available from each source:
 
 | Source | File Pattern | What You Extract |
 |---|---|---|
-| AEO Metrics | `{client_root}/04_content_engine/audits/metrics-*.json` | Per-query presence_type, citation_score, answer_rate, SOV |
+| AEO Metrics | `clients/{slug}/research/audits/metrics-*.json` | Per-query presence_type, citation_score, answer_rate, SOV |
 | Previous AEO Metrics | Second-most-recent `metrics-*.json` | Baseline for trend detection |
-| Visibility Tracker | `{client_root}/05_distribution/reports/visibility_*.json` | Engagement trends, top/underperforming content, declining topics |
-| Campaign Retro | `{client_root}/00_admin/sprints/*/retro.md` | Content performance rankings, pipeline signals, what worked/didn't |
-| Competitive Monitor | `{client_root}/02_research/competitors/monitor_*.md` | Competitor visibility gains, new queries they're winning |
-| Current Query Bank | `{client_root}/04_content_engine/audits/*_query_bank.json` | Current tracked queries with categories and tiers |
-| Published Content | `{client_root}/04_content_engine/` (all subdirectories) | Published page dates, titles, content types |
+| Visibility Tracker | `clients/{slug}/production/distribution/reports/visibility_*.json` | Engagement trends, top/underperforming content, declining topics |
+| Campaign Retro | `clients/{slug}/intelligence/retros/*.md` (from `/campaign-retro`) | Content performance rankings, pipeline signals, what worked/didn't |
+| Competitive Monitor | `clients/{slug}/research/competitors/monitor_*.md` | Competitor visibility gains, new queries they're winning |
+| Current Query Bank | `clients/{slug}/research/audits/*_query_bank.json` | Current tracked queries with categories and tiers |
+| Published Content | `clients/{slug}/production/` (all subdirectories) | Published page dates, titles, content types |
 
 ### On-Demand (Run During Execution)
 | Source | Tool | What You Extract |
@@ -241,7 +239,7 @@ Run these in PARALLEL:
 3. **Read campaign retros** - last 2 retro files
 4. **Read competitive monitors** - last 4 weekly monitors
 5. **Read current query bank** - latest `*_query_bank.json`
-6. **Scan published content** - glob all `.md` files in `04_content_engine/` for dates and types
+6. **Scan published content** - glob all `.md` files in `clients/{slug}/production/` for dates and types
 
 ### Phase 2: Refresh Detection
 
@@ -413,7 +411,7 @@ created: {ISO-8601}
 ## Updated CSV (for Ahrefs Brand Radar prompts; legacy: aeo_audit.py)
 
 Write the complete updated query bank CSV to:
-`{client_root}/04_content_engine/audits/{YYYY-MM-DD}_query_bank.csv`
+`clients/{slug}/research/audits/{YYYY-MM-DD}_query_bank.csv`
 
 Include ALL queries (existing + new - removed).
 ```
@@ -422,7 +420,7 @@ Include ALL queries (existing + new - removed).
 
 Write all outputs to:
 ```
-../clients/{client_slug}/04_content_engine/audits/
+clients/{client_slug}/research/audits/
   {YYYY-MM-DD}_refresh_report.md
   {YYYY-MM-DD}_query_expansion.md
   {YYYY-MM-DD}_query_bank.csv          (updated full bank)

@@ -33,8 +33,6 @@ If TARGET_QUERY is missing: ask for it.
 
 ## How AI Models Select Sources
 
-Understanding why AI models cite sources helps explain every check below.
-
 **What AI citation actually means:**
 AI models don't rank pages — they extract passages. A page gets cited when:
 1. It's in the platform's search index (technical access)
@@ -323,7 +321,8 @@ READY FOR AEO INJECTION: [YES — pass to aeo-injector | NO — manual work requ
   by this checker. Pass the full AEO_REPORT as input.
 - **linkedin-post-writer**: Creates LinkedIn posts with AEO elements
   built in from the start
-- **blog-post-writer**: Creates blog posts with all AEO checks passing
-  from the initial draft
-- **visibility-tracker**: Tracks whether the optimized content is actually
-  being cited in AI search after publishing
+- **aeo-page-generator**: Creates AEO pages (14 page types) with all AEO
+  checks passing from the initial draft; for first-person founder posts,
+  use blog-writer
+- **aeo-engine-scan**: Confirms whether the optimized content is
+  actually being cited in AI search after publishing (decay mode diffs over time)

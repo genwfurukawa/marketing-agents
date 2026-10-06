@@ -37,29 +37,11 @@ The structural backbone for AI-retrievable pages. Used by the
 - [report.html.template](templates/monthly_briefing/report.html.template)
   — standalone HTML briefing template used by `/monthly-briefing`
 
-## Audit Blueprint Scripts (4 .py.template files)
-
-Script templates that get copied + customized per audit engagement. Used
-by `/audit-blueprint`.
-
-| Template | Purpose |
-|----------|---------|
-| [analyze_perplexity.py.template](templates/audit_blueprint_scripts/analyze_perplexity.py.template) | Analyze Perplexity citation data |
-| [build_query_bank.py.template](templates/audit_blueprint_scripts/build_query_bank.py.template) | Build the audit query bank |
-| [build_data_deliverables.py.template](templates/audit_blueprint_scripts/build_data_deliverables.py.template) | Compile audit data deliverables |
-| [claude_direct_scan.py.template](templates/audit_blueprint_scripts/claude_direct_scan.py.template) | Direct Claude-API citation scan |
-
 ## Vault Templates (notes + SOPs)
 
 | Template | Purpose |
 |----------|---------|
 | [vault/templates/sop-template.md](vault/templates/sop-template.md) | Generic SOP scaffold |
-| [vault/templates/daily-note-template.md](vault/templates/daily-note-template.md) | Daily note scaffold for the Obsidian vault |
 | [vault/sops/00-index-template.md](vault/sops/00-index-template.md) | SOP index template |
 | [vault/sops/01-notion-setup-template.md](vault/sops/01-notion-setup-template.md) | Notion HQ setup SOP template |
 
-## Ops Templates
-
-| Template | Purpose |
-|----------|---------|
-| [docs/scheduled-jobs-template.md](docs/scheduled-jobs-template.md) | Scaffold for declaring recurring/scheduled jobs in a client engagement |

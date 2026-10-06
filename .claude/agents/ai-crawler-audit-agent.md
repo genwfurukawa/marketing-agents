@@ -167,8 +167,8 @@ Generate a prioritized fix list. For each recommendation:
 ```
 1. Compile into output JSON matching ai_crawler_audit_output.json schema
 2. If client_slug provided:
-   Save to: {client_root}/04_content_engine/audits/crawler_audits/{date}_crawler_audit.json
-   Save markdown to: {client_root}/04_content_engine/audits/crawler_audits/{date}_crawler_audit.md
+   Save to: clients/{slug}/research/audits/crawler_audits/{date}_crawler_audit.json
+   Save markdown to: clients/{slug}/research/audits/crawler_audits/{date}_crawler_audit.md
 3. If no client_slug:
    Output to conversation only
 ```

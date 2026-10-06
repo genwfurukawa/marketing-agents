@@ -318,7 +318,7 @@ If search queries are throttled:
 
 If --client is provided:
 ```
-{client_root}/02_research/scorecards/{date}_{company_slug}_scorecard.md
+clients/{slug}/research/scorecards/{date}_{company_slug}_scorecard.md
 ```
 
 If no client:

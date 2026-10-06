@@ -1,12 +1,12 @@
 ---
 description: Run 4 parallel quality reviewers on content drafts - voice, AEO, brand consistency, and conversion
-argument-hint: [--client client-slug] [--draft path/to/draft.md | --sprint-dir path/to/sprint/drafts/]
+argument-hint: [--client client-slug] [--draft path/to/draft.md | --dir path/to/drafts/]
 allowed-tools: Task, Read, Write, Glob, Grep
 ---
 
 # Content Review - Parallel Specialist Reviews
 
-You run 4 independent reviewers in parallel on one or more content drafts. This is the marketing equivalent of G-Stack's `/review` with parallel specialists (security, testing, performance).
+You run 4 independent reviewers in parallel on one or more content drafts.
 
 Each reviewer evaluates from a different lens. No reviewer overlaps with another.
 
@@ -23,12 +23,12 @@ Each reviewer evaluates from a different lens. No reviewer overlaps with another
 
 Accepts either:
 - `--draft path/to/draft.md` - Review a single draft
-- `--sprint-dir path/to/sprint/drafts/` - Review all drafts in a sprint directory
+- `--dir path/to/drafts/` - Review all drafts in a directory (e.g. `clients/{slug}/production/drafts/`)
 - If neither provided, ask the user for the draft content or path
 
-For sprint context:
-- Read sprint.json to get client_slug and sprint metadata
-- Load all `.md` files from the `drafts/` directory
+For directory mode:
+- Resolve the client via the active client convention: explicit `--client` slug, else the `CLIENT_CONFIG` env var pointing at the client's config.yaml
+- Load all `.md` files from the directory
 
 ## Execution
 
@@ -39,7 +39,7 @@ Before invoking reviewers, load these files (pass relevant sections to each revi
 1. `clients/{client}/config.yaml` - voice.never_say, voice.always_say, positioning, icp, offers
 2. `lessons.md` - all accumulated corrections
 3. `clients/{client}/config/voice-guide.md` - voice constraints
-4. Client Brand Brain (if client specified): `{client_root}/03_insight_layer/brand_brain.md`
+4. Client Brand Brain (if client specified): `clients/{slug}/config/brand-brain.md`
 
 ### Step 2: Detect Format
 
@@ -150,16 +150,16 @@ Show the compiled report and ask: "Approve these fixes and move to QA, or revise
 {Full conversion-reviewer output}
 ```
 
-### Sprint Directory Output
+### Batch Directory Output
 
-When reviewing a sprint, save the compiled report to:
-`{sprint_dir}/reviews/review_compiled.md`
+When reviewing a directory, save the compiled report to:
+`{dir}/reviews/review_compiled.md`
 
 Also save individual reviewer reports:
-- `{sprint_dir}/reviews/voice_review.md`
-- `{sprint_dir}/reviews/aeo_review.md`
-- `{sprint_dir}/reviews/brand_review.md`
-- `{sprint_dir}/reviews/conversion_review.md`
+- `{dir}/reviews/voice_review.md`
+- `{dir}/reviews/aeo_review.md`
+- `{dir}/reviews/brand_review.md`
+- `{dir}/reviews/conversion_review.md`
 
 ## Pass/Fail Logic
 
@@ -167,11 +167,11 @@ Also save individual reviewer reports:
 - **PASS WITH FIXES**: Auto-fixes applied, no remaining critical/major issues, conversion score 5+
 - **FAIL**: Any reviewer has critical issues, OR conversion score below 5
 
-A FAIL blocks the QA phase in the sprint flow. The user must address the issues and re-run review.
+A FAIL blocks `/content-qa`. The user must address the issues and re-run review.
 
 ## Standalone Usage
 
-This command works outside of sprints too:
+This command also works on any single draft:
 
 ```
 # Review a single draft

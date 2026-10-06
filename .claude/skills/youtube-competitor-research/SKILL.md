@@ -1,6 +1,6 @@
 ---
 name: youtube-competitor-research
-description: Deep competitor research for a YouTube keyword/topic using the YouTube Data API. Pulls the top-performing videos for a keyword, computes OUTLIER MULTIPLES (views vs each channel's recent median — the real signal of what overperformed), tears down their packaging (title patterns, thumbnail tactics, hook + structure), and outputs a competitive gap map. Use when the user says "research youtube competitors", "what's working on youtube for [keyword]", "find outlier videos for [topic]", or as the first step before validating an idea or packaging a video. Deeper than youtube-strategy-agent (which is WebSearch-only) — this uses real view/velocity/outlier data.
+description: Deep competitor research for a YouTube keyword/topic using the YouTube Data API. Pulls the top-performing videos for a keyword, computes OUTLIER MULTIPLES (views vs each channel's recent median — the real signal of what overperformed), tears down their packaging (title patterns, thumbnail tactics, hook + structure), and outputs a competitive gap map. Use when the user says "research youtube competitors", "what's working on youtube for [keyword]", "find outlier videos for [topic]", or as the first step before validating an idea or packaging a video. Deeper than WebSearch-only competitor research, this uses real view/velocity/outlier data from the API.
 ---
 
 # YouTube Competitor Research — keyword → outlier teardown → gap map
@@ -15,7 +15,7 @@ can't see this. The YouTube Data API can.
 ## Setup gate (first run)
 
 Needs a free YouTube Data API key. If `scripts/youtube/yt_api.py` errors on the key, STOP
-and walk the user through [setup.md](setup.md). Everything downstream depends on it.
+and walk the user through [setup.md](setup.md).
 
 ## Inputs
 

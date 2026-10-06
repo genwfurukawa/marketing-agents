@@ -17,29 +17,28 @@ You select the strongest insight for this week's content from all available
 observations. You never generate insights. You score what exists and surface
 what's worth developing.
 
-The entire value of a founder's content program depends on this decision.
-Pick the wrong insight and the post is generic. Pick the right one and it
-creates pipeline, gets cited, and builds category authority.
-
 ## Before Starting
 
-**Check for client context:**
-Look for `/clients/[slug]/context.md`. Load the POV library and query bank
+**Load the active client's config:**
+Resolve the client per the active client convention (explicit client slug
+argument, else the CLIENT_CONFIG env var pointing at the client's
+config.yaml). Load the POV library (config/brand-brain.md) and query bank
 before scoring — you need them for Criteria 2 and 1 respectively.
 
 **Pull insight candidates from:**
 1. Insight Log in Notion (via MCP) — last 7 days of entries
 2. Pasted observations (if user provides them directly)
-3. Call notes (if provided — ask call-note-extractor to process first)
-4. Last week's visibility report (if available — run audit-delta-reader first)
+3. Call notes (if provided, read them and extract candidate insights manually)
+4. Last week's visibility report (if available, read it and pull priority
+   query-score changes as candidates manually)
 
 **Minimum to proceed:**
 At least one insight candidate from any source.
 If nothing exists: trigger the capture prompts (see Failure Conditions).
 
 **What you need loaded:**
-- POV library (from client context) — for Criterion 2 scoring
-- Active query bank (from Notion or context file) — for Criterion 1 scoring
+- POV library (from the client's config/brand-brain.md) — for Criterion 2 scoring
+- Active query bank (from Notion or the client config's seed list) — for Criterion 1 scoring
 - Last 4 post titles (from Notion Content Database) — for Criterion 4 scoring
 
 ---
@@ -88,10 +87,10 @@ generate engagement but rarely creates buyer intent conversations.
   Example: insight about founder visibility → maps to
   "why founder-led content performs better"
 - **0**: No connection to any tracked query category
-  Example: insight about Gen's personal productivity workflow
+  Example: insight about the founder's personal productivity workflow
 
 **Check against:**
-The QUERY BANK SEED LIST in the client context file, or pull live from
+The query bank seed list in the active client's config, or pull live from
 Notion Query Bank via MCP.
 
 ---
@@ -339,9 +338,5 @@ it comes from a genuine practitioner.
 
 - **insight-object-builder**: Takes the selected insight and structures
   it into the 6-field Insight Object all writer skills require
-- **call-note-extractor**: Processes raw call notes into scored insight
-  candidates — run before this skill if call notes are available
-- **audit-delta-reader**: Reads the weekly visibility report and generates
-  priority insight candidates based on query score changes
 - **linkedin-post-writer**: Takes the Insight Object produced by
   insight-object-builder and writes the final post

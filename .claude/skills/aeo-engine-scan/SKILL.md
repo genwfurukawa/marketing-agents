@@ -5,23 +5,24 @@ multiple engines for a query bank, and you want ONE unified presence map instead
 running each engine separately. Triggers on: 'scan my AEO across engines', 'where do
 I show up in AI search', 'check ChatGPT/Perplexity/Gemini/Google AI Overviews for my
 brand', 'run my query bank across all engines', 'unified AI visibility scan',
-'multi-engine citation check'. Wraps the Perplexity scanner, Claude direct scan, and
-Ahrefs Brand Radar, and adds a documented method for the API-less surfaces (Google
-AI Overviews, Copilot). Output feeds Dimension 3 + 9 of the visibility rubric and the
-gap matrix. For decay-over-time tracking, see citation-decay-monitor."
+'multi-engine citation check'. Wraps the multi-engine scanner (scripts/aeo_audit:
+Perplexity, ChatGPT, Claude, Gemini) and adds a documented method for the API-less
+surfaces (Google AI Overviews, Copilot). Output feeds the Answer Test section of the Citability Score and the
+gap matrix. Also owns decay-over-time tracking (decay mode): 'check for citation
+decay', 'did my AI visibility drop', 'am I still cited', 'compare this scan to last
+month' — re-runs the saved bank and diffs against the prior scan."
 metadata:
   version: 1.0.0
 ---
 
 # AEO Engine Scan
 
-This is the unified multi-engine citation tester. Today the toolkit measures AI
-visibility in three separate places — `scripts/aeo_audit/` (Perplexity), a Claude
-direct scan, and `ahrefs-pull` (Brand Radar for ChatGPT/Gemini) — plus Google AI
-Overviews is checked by hand. This skill runs them as one pass against a single
-query bank and returns one presence/position/citation map, so Dimension 3 (AI Search
-Presence) and Dimension 9 (Citation Share) can be scored without stitching outputs
-together.
+This is the unified multi-engine citation tester. The toolkit measures AI
+visibility through `scripts/aeo_audit/aeo_audit.py --engines
+perplexity,chatgpt,claude,gemini`, plus a sampled method for Google AI
+Overviews. This skill runs them as one pass against a single
+query bank and returns one presence/position/citation map, so the Answer Test section of the
+Citability Score can be graded without stitching outputs together.
 
 ## What This Measures
 
@@ -31,8 +32,7 @@ For each query × engine, three things:
 3. **Citation** — which URL/domain the engine cited (own vs competitor vs 3rd-party)
 
 The north-star metric out of this is **Source Control Rate** = citations to owned
-domains / total citations — same definition as `ahrefs-pull`, computed here across
-all engines at once.
+domains / total citations — computed across all engines at once.
 
 ## Before Starting
 
@@ -42,8 +42,9 @@ You need:
 2. **Brand + domain + competitors** — for presence/citation attribution.
 3. **Available engine access** — check which of these are wired:
    - Perplexity API key (`PERPLEXITY_API_KEY`) → `scripts/aeo_audit/aeo_audit.py`
-   - Anthropic API key → Claude direct scan with web_search
-   - Ahrefs Brand Radar MCP → ChatGPT + Gemini (and historical)
+   - Anthropic API key (`ANTHROPIC_API_KEY`) → Claude scan with web_search
+   - OpenAI API key (`OPENAI_API_KEY`) → ChatGPT scan
+   - Google GenAI key (`GOOGLE_GENAI_API_KEY`) → Gemini scan
    - Google AI Overviews + Copilot → no API; documented manual/WebSearch method
 
 Degrade gracefully: scan whatever engines are available, and clearly label which
@@ -62,15 +63,14 @@ This gives answer text + citations + per-domain frequency/position. This is the
 strongest signal because it exposes the actual ranked sources, not just prose.
 
 ### Claude (Anthropic API + web_search)
-Run each Tier 1 + Tier 2 query through the Anthropic API with the web_search tool.
-Capture: does the answer mention the brand? cite its URL? what position? Reuse the
-`_inputs/claude_direct_scan.py` pattern from `/audit-blueprint`.
+Run via `aeo_audit.py --engines claude` (Anthropic API with the web_search tool).
+Capture: does the answer mention the brand? cite its URL? what position?
 
-### ChatGPT + Gemini (Ahrefs Brand Radar)
-Invoke `ahrefs-pull` (or the Brand Radar MCP tools directly) for SOV, mentions,
-cited domains/pages, and sample AI responses. Brand Radar lags 1-2 weeks after
-prompts are seeded — if prompts aren't populated yet, mark these engines
-`pending`, not `absent`.
+### ChatGPT + Gemini (API)
+Run via `aeo_audit.py --engines chatgpt,gemini` (`OPENAI_API_KEY` +
+`GOOGLE_GENAI_API_KEY`). Both produce the same QueryResult shape as the
+Perplexity scan, so the merged map needs no stitching. Historical Ahrefs
+Brand Radar pulls (pre-2026-07) live in `research/ahrefs/` for baselines.
 
 ### Google AI Overviews + Copilot (no API)
 Documented manual/WebSearch method (be explicit that this is a sampled estimate,
@@ -121,21 +121,56 @@ Write to `clients/{slug}/research/aeo-scans/{YYYY-MM-DD}/`:
      the inputs to `cited-page-teardown`
    - Source Control Rate with the owned-domain list used
 
-3. Save the query bank used alongside, so `citation-decay-monitor` can re-run the
-   identical set later.
+3. Save the query bank used alongside, so a later decay-mode run can re-run the
+   identical set.
+
+## Decay Mode — comparing successive scans
+
+AI answers are not stable: a page cited last month can vanish when a competitor
+publishes fresher content or the engine reweights sources. Decay mode makes
+visibility a *tracked* metric. It detects and reports only — it never auto-fixes
+or auto-publishes.
+
+**Prerequisite:** a prior scan at `research/aeo-scans/{date}/engine_map.json` plus
+its saved query bank. A diff is only valid on the identical query set + engines.
+If only one scan exists, run the normal scan now as baseline and re-run in 2-4 weeks.
+
+1. Re-run the identical scan (same bank, same engines) to a fresh dated folder.
+2. Diff the two engine maps, classifying every query × engine transition:
+
+| Transition | Meaning | Severity |
+|------------|---------|----------|
+| `featured`/`cited` → `absent` | **Hard decay** — lost the citation | 🔴 high |
+| `featured` → `mentioned`/`cited` | **Soft decay** — demoted | 🟠 medium |
+| owned URL cited → competitor URL cited | **Displacement** | 🔴 high |
+| `absent` → `cited`/`featured` | **Gain** — new win | 🟢 report as wins |
+| no change | stable | — |
+
+3. Roll up headline deltas vs prior: Source Control Rate, answer rate, per-engine
+   coverage, share of voice.
+4. Attribute each hard decay/displacement: which page lost it, which competitor
+   took it (→ `cited-page-teardown`), ranked cause hypotheses (stale content,
+   fresher competitor page, engine reweighting, page moved/changed).
+
+Write to `research/aeo-scans/{YYYY-MM-DD}_decay/`: `decay_report.md` (headline,
+🔴 hard-decay table with hypotheses + recommended actions, 🟠 demotions, 🟢 wins —
+don't bury the good news — and a watchlist) plus `decay.json` for trend charts and
+the Notion Visibility Scores row. Stale-content decay hands to
+`content-refresh-agent`; anything re-published goes **through the human gate**,
+never auto. Cadence: monthly; biweekly for competitive categories.
 
 ## Hand-offs
 
 - Absent-but-competitor-cited queries → `cited-page-teardown` (why do they win?)
-- The whole `engine_map.json` → feeds Dimension 3 + 9 scoring in the rubric and the
+- The whole `engine_map.json` → feeds the Answer Test scoring in the Citability rubric and the
   `05_gap_matrix` deliverable
-- Re-run on a cadence → `citation-decay-monitor` diffs successive scans
+- Re-run on a cadence in decay mode to diff successive scans
 
 ## Quality Gate
 
 - [ ] Every engine labeled measured / sampled / pending / skipped — no silent drops
 - [ ] AIO + Copilot results flagged `method: sampled`, never presented as exact
-- [ ] Brand Radar engines marked `pending` (not `absent`) when prompts aren't seeded
+- [ ] Unscanned engines marked `pending` (not `absent`) — never silently dropped
 - [ ] Source Control Rate computed with the owned-domain list stated
 - [ ] Absent-but-competitor-cited queries surfaced for teardown
 - [ ] Query bank saved with the scan for reproducible decay tracking

@@ -6,7 +6,7 @@ allowed-tools: Task, Read, Write, Glob, Grep, Bash, WebSearch, WebFetch
 
 # Build Query Bank
 
-> **Migration notice (2026-05-11):** The query bank is now consumed primarily by **Ahrefs Brand Radar prompts** (via the `ahrefs-pull` skill and `management-brand-radar-prompts` API). The same CSV is still compatible with the legacy `scripts/aeo_audit/aeo_audit.py` if needed for spot-checks.
+> **Engine note (2026-07-24):** the query bank feeds `scripts/aeo_audit/aeo_audit.py --engines perplexity,chatgpt,claude,gemini` and the `aeo-engine-scan` skill. (The 2026-05 Ahrefs Brand Radar path is retired; historical pulls live in `research/ahrefs/`.)
 
 You build a structured query bank of 20-30 queries for AI visibility auditing. The output is consumed by Ahrefs Brand Radar (primary) or the legacy `aeo_audit.py batch --input query_bank.csv` (legacy).
 
@@ -34,8 +34,7 @@ You synthesize their outputs into a single, tagged query bank. You never replace
 Before any work, load:
 1. `clients/{client}/config.yaml` from ops repo root
 2. `lessons.md` from ops repo root
-3. Client Brand Brain at `../clients/{client_slug}/03_insight_layer/brand_brain.md` (if exists)
-4. Client config at `../clients/{client_slug}/00_admin/client_config.json` (if exists)
+3. Client Brand Brain at `clients/{client_slug}/config/brand-brain.md` (if exists)
 
 ## Execution Flow
 
@@ -268,11 +267,13 @@ The `category` column maps to the `intent` field in aeo_audit.py's analyzer. Use
 Write all outputs to the client workspace:
 
 ```
-../clients/{client_slug}/04_content_engine/audits/
+clients/{client_slug}/research/audits/
   {YYYY-MM-DD}_query_bank.md          (full tagged bank)
   {YYYY-MM-DD}_query_bank.csv         (aeo_audit.py batch input)
   {YYYY-MM-DD}_query_bank.json        (programmatic use)
 ```
+
+For a standalone client repo (`~/clients/{slug}/`), write to the repo's `research/audits/` directory.
 
 ## Presentation Checkpoint
 

@@ -91,7 +91,7 @@ def main():
     summary = out_dir / f"{today}_summary.md"
     with open(summary, "w") as f:
         f.write(f"# GA4 Summary — {today}\n\n")
-        f.write(f"- Property: `{property_id}` (Talkadot Marketing GA4)\n")
+        f.write(f"- Property: `{property_id}` (client marketing GA4)\n")
         f.write(f"- Window: {start} → {end} ({args.days} days)\n")
         f.write(f"- Sessions: **{total_sessions}**\n")
         f.write(f"- Engaged sessions: **{total_engaged}** ({engagement_rate:.1f}%)\n")

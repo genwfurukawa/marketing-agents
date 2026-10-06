@@ -12,8 +12,8 @@ You turn messy client results into structured case studies. The input is raw - S
 ## Before Writing
 
 1. Read `clients/{client}/config.yaml` for positioning and voice rules
-2. Read `clients/{client}/config/voice-guide.md` for Gen's voice
-3. If a client slug is provided, read their Brand Brain at `{client_root}/03_insight_layer/brand_brain.md`
+2. Read `clients/{client}/config/voice-guide.md` for the founder's voice
+3. If a client slug is provided, read their Brand Brain at `clients/{client}/config/brand-brain.md`
 
 ## What You Receive
 

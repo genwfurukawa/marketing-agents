@@ -56,8 +56,8 @@ Every JSON file MUST follow this structure:
 ## Steps
 
 1. **Load Context** (if --client provided):
-   - Resolve `{client_root}` from `clients_registry.json`
-   - Read Brand Brain at `{client_root}/03_insight_layer/brand_brain.md` for visual identity
+   - Resolve the client via the active client convention: explicit client slug argument, else `CLIENT_CONFIG` env var pointing at the client's `config.yaml`. `{client_root}` = `clients/{client_slug}/` (or the repo root in a standalone client repo)
+   - Read Brand Brain at `{client_root}/config/brand-brain.md` for visual identity
    - Read brand kit at `clients/{client}/brand/brand-kit.md`
    - Note the client's colors, font, logo, and design principles
 

@@ -343,6 +343,6 @@ After all injections, verify:
   this skill requires
 - **voice-validator**: Run after this skill — checks that injected
   content doesn't introduce voice violations
-- **blog-post-writer**: Creates blog posts with AEO structure built in
-  from the start — use this if you're starting from scratch instead of
-  fixing existing content
+- **aeo-page-generator**: Creates AEO pages with the structure built in
+  from the start, use this if you're starting from scratch instead of
+  fixing existing content (blog-writer for first-person founder posts)

@@ -24,9 +24,9 @@ Complete YouTube content creation system covering idea generation, scripting (lo
 
 ## Architecture
 
-This skill orchestrates 4 specialized agents:
+This skill orchestrates 3 specialized agents plus 1 research skill:
 
-1. **youtube-strategy-agent** - Market research, trend analysis, content ideation
+1. **youtube-competitor-research skill** - Market research and ideation grounded in real YouTube Data API outlier data
 2. **youtube-script-agent** - Script writing with hooks, pacing, retention optimization
 3. **youtube-thumbnail-agent** - Thumbnail psychology, design concepts, A/B testing
 4. **youtube-seo-agent** - Metadata optimization for discovery and CTR
@@ -39,7 +39,7 @@ Scaffold a new video folder with the correct structure and instructions.
 
 **What it does:**
 - Generates a URL-safe slug from the title (or uses the slug directly)
-- Creates `{client_root}/workflows/youtube/videos/{slug}/input/` and `output/`
+- Creates `{client_root}/production/youtube/videos/{slug}/input/` and `output/`
 - Writes `DROP_FILES_HERE.md` with Descript export instructions
 - Prints the exact files the user needs to paste
 
@@ -100,7 +100,7 @@ Generates 10-15 video ideas with predicted performance metrics.
 - Estimates search volume and competition
 - Provides virality potential score
 
-**Uses:** youtube-strategy-agent
+**Uses:** youtube-competitor-research skill (real YouTube Data API outlier data)
 
 **Output:** Markdown file with ranked video ideas
 
@@ -194,12 +194,12 @@ Optimizes all metadata for maximum discoverability.
 Complete end-to-end workflow combining all agents.
 
 **What it does:**
-1. Generate video concept & research (strategy-agent)
+1. Generate video concept & research (youtube-competitor-research skill)
 2. Write complete script (script-agent)
 3. Design thumbnail concepts (thumbnail-agent)
 4. Optimize all metadata (seo-agent)
 
-**Uses:** All 4 agents in sequence
+**Uses:** The research skill + all 3 agents in sequence
 
 **Output:** Complete production package with all deliverables
 
@@ -216,7 +216,7 @@ Complete end-to-end workflow combining all agents.
 
 Store outputs in:
 ```
-{client_root}/workflows/youtube/
+{client_root}/production/youtube/
   ├── videos/                          # Per-video publish packages
   │   └── [video-slug]/
   │       ├── input/                   # Drop Descript exports here
@@ -244,9 +244,9 @@ Store outputs in:
 ### Context Sources
 
 Agents will automatically pull context from:
-- `03_insight_layer/seeds/merged_atoms.json` - Your unique insights
-- `02_research/ao_search/aeo_questions.json` - Audience questions
-- `02_research/competitors/competitive_atoms.json` - Competitor analysis
+- `{client_root}/research/founder-sessions/*/atoms.json` - Your unique insights (from `/founder-session`)
+- `{client_root}/research/ao_search/aeo_questions.json` - Audience questions
+- `{client_root}/research/competitors/competitive_atoms.json` - Competitor analysis
 - Client brand voice guidelines (if available)
 
 ### Example Full Workflow
@@ -306,8 +306,8 @@ Track these after implementation:
 ## Error Handling
 
 If agents can't find required context:
-1. Check that `03_insight_layer/seeds/merged_atoms.json` exists
-2. Ensure `02_research/` directory has recent research
+1. Check that founder-session atoms exist under `{client_root}/research/founder-sessions/`
+2. Ensure `{client_root}/research/` has recent research
 3. Provide more specific topic/niche in command arguments
 4. Run research phase first if starting fresh
 
@@ -315,5 +315,6 @@ If agents can't find required context:
 
 ## Related Skills
 
-- `/plan-content` - Create broader content strategy including YouTube
-- `/create-brief` - Generate detailed content briefs from ideas
+- `youtube-packaging-first` skill - title + thumbnail first, full idea-to-publish pipeline
+- `youtube-idea-validation` skill - go/no-go scoring before scripting
+- `youtube-competitor-research` skill - outlier data before ideation

@@ -6,8 +6,8 @@ Object', 'structure this insight', 'prepare this for writing', 'create an
 insight object from this observation', or automatically at the end of
 insight-scorer when a SELECTED insight is ready. The Insight Object is the
 universal input format for all writer skills: linkedin-post-writer,
-blog-post-writer, newsletter-writer, video-outline-writer. Nothing gets written
-without one."
+aeo-page-generator, blog-writer, email-agent, storyboard-builder. Nothing gets
+written without one."
 metadata:
   version: 2.0.0
 ---
@@ -23,16 +23,20 @@ skills produce on-target output on the first pass.
 
 ## Before Starting
 
-**Check for client context:**
-Look for `/clients/[slug]/context.md`. The POV library and query bank
-are needed for Fields 3 and 4.
+**Load the active client's config:**
+Resolve the client per the active client convention (explicit client slug
+argument, else the CLIENT_CONFIG env var pointing at the client's
+config.yaml). Read config.yaml, config/icp-psyche.md, and
+config/brand-brain.md (POV library), plus the relevant lessons store
+categories per CLAUDE.md. The POV library and query bank are needed for
+Fields 3 and 4.
 
 **What you need:**
 1. The selected insight text (from insight-scorer output, or user-provided)
 2. The source type: `insight-log` | `call-notes` | `audit-delta` |
    `podcast` | `community` | `manual`
-3. Active query bank (from Notion via MCP, or from context file seed list)
-4. POV library (from context file)
+3. Active query bank (from Notion via MCP, or from the client config's seed list)
+4. POV library (from the client's config/brand-brain.md)
 
 If the selected insight came from insight-scorer: the source type and
 scoring justifications help complete Fields 1, 3, and 4 faster.
@@ -89,7 +93,8 @@ I've been thinking about content structure.  [not an observation]
 ### Field 2: Why It Matters to ICP
 
 **What it is:** One sentence connecting the insight to a specific consequence
-the ICP (Series A SaaS CEO) feels in their role.
+the ICP (as defined in the active client's config.yaml and
+config/icp-psyche.md) feels in their role.
 
 **Framing requirement:**
 Written from the ICP's perspective, not the author's.
@@ -314,7 +319,8 @@ Before outputting, verify:
 - **insight-scorer**: Always run before this skill — it selects the insight
   this skill structures
 - **linkedin-post-writer**: Takes the complete Insight Object as its primary input
-- **blog-post-writer**: Takes the Insight Object for long-form pieces
-- **newsletter-writer**: Takes the Insight Object for email content
-- **query-bank-auditor**: Run when Field 3 generates a NEW query flag —
-  the new query should be added to the tracked query bank
+- **aeo-page-generator**: Takes the Insight Object for long-form AEO pieces
+  (use blog-writer for first-person founder posts)
+- **email-agent**: Takes the Insight Object for email content
+- When Field 3 generates a NEW query flag, add the query to the tracked
+  query bank manually (Notion Query Bank via MCP)

@@ -1,6 +1,6 @@
 ---
 name: gap-to-content-mapper-agent
-description: Maps visibility gaps from /build-audit-report to specific content types, scores priority, and produces a 90-day content plan with Month 1 briefs via content-brief-agent.
+description: Maps visibility gaps from /build-audit-report to specific content types, scores priority, and produces a 90-day content plan with Month 1 briefs ready for the channel production skills.
 tools: Read, Write, Glob, Grep
 model: sonnet
 ---
@@ -9,15 +9,13 @@ model: sonnet
 
 You take a gap analysis document from `/build-audit-report` and turn it into a prioritized 90-day content plan. Every gap gets mapped to a specific content type. Month 1 gets individual content briefs.
 
-You are the bridge between diagnosis and execution. The audit found the gaps. You decide what gets built, in what order, and why.
-
 ## Your Role
 
 1. Read the gap analysis and metrics from a completed audit
 2. Map each gap to one or more content types using the mapping rules below
 3. Score and prioritize using the priority formula
 4. Produce a 90-day plan with monthly breakdown
-5. Chain into `content-brief-agent` to generate Month 1 briefs (10 pieces)
+5. Produce Month 1 briefs (10 pieces) ready for the channel production skills (aeo-page-generator, linkedin-post-writer, email-agent)
 
 ## Inputs
 
@@ -25,8 +23,9 @@ You receive one of:
 
 **Option A - Gap analysis file path:**
 ```
-../clients/{client_slug}/04_content_engine/audits/{date}_gap_analysis.md
+clients/{client_slug}/research/audits/{date}_gap_analysis.md
 ```
+(For standalone client repos at `~/clients/{slug}`, this is the repo's own `research/audits/` directory.)
 
 **Option B - Direct gap data** pasted by the user (from `/build-audit-report` output)
 
@@ -34,11 +33,11 @@ You receive one of:
 - `{date}_gap_analysis.md`
 - `{date}_visibility_scorecard.md`
 - `{date}_executive_summary.md`
-- `metrics-{company}.json` (from `ahrefs-pull` skill - Brand Radar; legacy: aeo_audit.py)
+- `metrics-{company}.json` (from `scripts/aeo_audit/aeo_audit.py`)
 
 You also need:
 - `clients/{client}/config.yaml` from ops repo root (for pillars, ICP, competitors)
-- Client Brand Brain at `../clients/{client_slug}/03_insight_layer/brand_brain.md` (if exists)
+- Client Brand Brain at `clients/{client_slug}/config/brand-brain.md` (if exists)
 - `lessons.md` from ops repo root
 
 **Always load clients/{client}/config.yaml and lessons.md before producing any output.**
@@ -236,7 +235,7 @@ Sort all mapped content pieces by priority score descending. Assign to months:
 
 ### Phase 4: Generate Month 1 Content Briefs
 
-For each of the 10 Month 1 content pieces, produce a brief that chains into `content-brief-agent`. The brief must include all fields that agent expects:
+For each of the 10 Month 1 content pieces, produce a brief ready for the channel production skills. The brief must include:
 
 ```markdown
 ### Brief #{n}: {Content Type} - "{Title}"
@@ -387,7 +386,7 @@ Show how all planned pages link to each other:
 
 Write the plan to:
 ```
-../clients/{client_slug}/04_content_engine/audits/{YYYY-MM-DD}_content_plan.md
+clients/{client_slug}/research/audits/{YYYY-MM-DD}_content_plan.md
 ```
 
 ## Presentation Checkpoint
@@ -413,7 +412,7 @@ Templates missing: {n} (must build before creating that content)
   - {template_1}
   - {template_2}
 
-Month 1 briefs ready for content-brief-agent.
+Month 1 briefs ready for channel production.
 
 File written: {path}
 ```

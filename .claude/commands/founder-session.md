@@ -16,7 +16,7 @@ This command is the front-end intake for the insight-capture pipeline. Run it on
 
 The system has insight-capture, insight-scorer, insight-object-builder, and produce-weekly-content. What was missing: the intake that turns a raw transcript into the queued atoms those skills consume.
 
-Before this command, founder sessions happened ad-hoc and atoms got lost. After this command, every session lands in `01_founder_capture/sessions/{YYYY-MM-DD}/` with traceable atom IDs that flow through to published content.
+Before this command, founder sessions happened ad-hoc and atoms got lost. After this command, every session lands in `clients/{slug}/research/founder-sessions/{YYYY-MM-DD}/` with traceable atom IDs that flow through to published content.
 
 ---
 
@@ -26,10 +26,10 @@ Required:
 - `--transcript` - path to a transcript file (txt, md, or Descript .json export)
 
 Optional:
-- `--client` - client slug (defaults to current ops repo brand from clients/{client}/config.yaml)
+- `--client` - client slug (defaults to the active client: `CLIENT_CONFIG` env var pointing at the client's config.yaml)
 - `--queue-days` - days of content to queue out (default 30)
 - `--video-source` - if a video recording exists, link it for downstream YouTube clip extraction
-- `--pillar` - bias atom selection toward one pillar (default: distribute across all 4)
+- `--pillar` - bias atom selection toward one pillar (default: distribute across the client's pillars per `clients/{client}/config/pillars.md`)
 
 ---
 
@@ -39,16 +39,16 @@ Optional:
 
 2. **Read context in parallel:**
    - `clients/{client}/config.yaml`
-   - `config/voice-guide.md`
-   - `config/icp-psyche.md`
-   - `config/pillars.md`
-   - `config/brand-brain.md`
+   - `clients/{client}/config/voice-guide.md`
+   - `clients/{client}/config/icp-psyche.md`
+   - `clients/{client}/config/pillars.md`
+   - `clients/{client}/config/brand-brain.md`
    - `lessons.md`
 
 3. **Invoke `insight-capture-agent`** with the transcript. Output: 8-15 atomic insights (quotes, stories, frameworks, data points, contrarian beliefs).
 
 4. **Invoke `insight-scorer` skill** on each atom. Score on:
-   - Pillar alignment (which of the 4 pillars + strength)
+   - Pillar alignment (which of the client's pillars + strength)
    - Specificity (named entities, numbers, mechanisms)
    - Contrarian potential (does it challenge conventional thinking?)
    - Citation potential (is it framework-worthy?)
@@ -79,7 +79,7 @@ Optional:
 10. **Output structure:**
 
 ```
-01_founder_capture/sessions/{YYYY-MM-DD}/
+clients/{slug}/research/founder-sessions/{YYYY-MM-DD}/
   transcript.txt                  (copied from source)
   atoms.json                      (raw extracted atoms with scores)
   insight_objects.json            (top atoms structured for production)
@@ -97,16 +97,16 @@ Optional:
 After this command runs, the user has three options:
 
 1. **Run `/produce-weekly-content` immediately** to generate Week 1 drafts from the top atoms.
-2. **Trickle production** via the weekly sprint - atoms flow into `/sprint create` automatically.
+2. **Trickle production** via the Notion task loop (see docs/OPERATING.md) - queue atoms as tasks and produce them week by week.
 3. **Review and override** the queue manually before drafts are generated (recommended for the first session).
 
 ---
 
 ## Critical Rules
 
-1. **Top atoms only.** Never queue more than 12 atoms per session even if more were extracted. Quality compounds, volume does not.
+1. **Top atoms only.** Never queue more than 12 atoms per session even if more were extracted.
 
-2. **Voice rules apply at extraction.** The insight-capture agent reads `config/voice-guide.md` - atoms must sound like Gen, not like AI summaries.
+2. **Voice rules apply at extraction.** The insight-capture agent reads `clients/{client}/config/voice-guide.md` - atoms must sound like the founder, not like AI summaries.
 
 3. **POV candidates are precious.** Most sessions produce 0-2 framework-worthy atoms. If you flag 5+, you're being lenient. Lower the bar = lose the authority play.
 
@@ -125,7 +125,7 @@ After this command runs, the user has three options:
 - Capture: `insight-capture-agent`
 - Scoring: `insight-scorer` skill
 - Object building: `insight-object-builder` skill
-- Production: `/produce-weekly-content`, `/sprint create`
+- Production: `/produce-weekly-content`
 - Video downstream: `youtube-publish-agent`, `youtube-script-agent`
 - Insight log + content calendar: Notion DBs via MCP
 

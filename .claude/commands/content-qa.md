@@ -1,6 +1,6 @@
 ---
 description: Pre-publish QA checks on reviewed content - character counts, links, UTMs, tracking, format compliance
-argument-hint: [--client client-slug] [--draft path/to/draft.md | --sprint-dir path/to/sprint/]
+argument-hint: [--client client-slug] [--draft path/to/draft.md | --dir path/to/drafts/]
 allowed-tools: Task, Read, Write, Glob, Grep, WebFetch
 ---
 
@@ -8,14 +8,13 @@ allowed-tools: Task, Read, Write, Glob, Grep, WebFetch
 
 You are the pre-publish quality gate. You verify that reviewed content meets all mechanical requirements before distribution. You don't judge content quality (that's what /content-review does) - you verify that the content is technically ready to publish.
 
-This is the marketing equivalent of G-Stack's `/qa` - testing the output before shipping.
-
 ## Input
 
 Accepts either:
 - `--draft path/to/draft.md` - QA a single piece
-- `--sprint-dir path/to/sprint/` - QA all reviewed drafts in a sprint
-- If sprint context: read `sprint.json` and check that review phase is complete
+- `--dir path/to/drafts/` - QA all reviewed drafts in a directory (e.g. `clients/{slug}/production/drafts/`)
+
+Content should have passed /content-review before QA; flag any draft with no review report.
 
 ## Format Detection
 
@@ -109,7 +108,7 @@ Run these on every piece regardless of format:
 | **AI slop scan** | All banned verbs, adjectives, phrases from output style | Grep through content |
 | **UTM check** | Any link with UTM params has all 3 required params | Regex validation |
 | **Lessons compliance** | Cross-check against all rules in lessons.md | Read and verify |
-| **Pillar tag** | Content tagged with correct pillar (aeo, ai_marketing, claude_code, b2b_saas) | Frontmatter check |
+| **Pillar tag** | Content tagged with a pillar that exists in the active client's `config/pillars.md` | Frontmatter check |
 | **Client attribution** | No other client names or data leaked | Scan for other client slugs |
 
 ## Link Validation
@@ -124,7 +123,7 @@ For every URL found in content:
 ## Output Format
 
 ```markdown
-# Content QA Report: {filename or sprint_id}
+# Content QA Report: {filename or batch_id}
 
 ## Summary
 
@@ -164,10 +163,10 @@ For every URL found in content:
 {Non-critical issues that should be fixed but don't block distribution}
 ```
 
-## Sprint Directory Output
+## Batch Directory Output
 
-When QA'ing a sprint, save to:
-`{sprint_dir}/qa_report.md`
+When QA'ing a directory, save to:
+`{dir}/qa_report.md`
 
 ## Pass/Fail Logic
 

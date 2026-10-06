@@ -43,7 +43,7 @@ Search each of these for questions related to the topic:
 ### What Counts as a Good Question
 
 A question is worth capturing if:
-- A Series A-B B2B SaaS CEO or head of marketing would ask it
+- Someone matching the client's ICP (per the active client's config.yaml) would ask it
 - It reveals a real pain point or knowledge gap
 - It could be answered with a LinkedIn post, blog post, or AEO page
 - It has engagement (upvotes, replies, views) suggesting others have the same question
@@ -52,7 +52,7 @@ A question is worth capturing if:
 ### What to Skip
 
 - Questions from students or beginners outside our ICP
-- Questions about B2C, e-commerce, or non-SaaS businesses
+- Questions about business models or industries outside the client's ICP (per config.yaml)
 - Questions already answered thoroughly by our existing content
 - Questions too niche to be relevant to more than one person
 

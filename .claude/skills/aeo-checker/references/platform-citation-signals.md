@@ -1,5 +1,5 @@
 # Platform Citation Signals
-# Used by: aeo-checker, visibility-tracker, visibility-report-writer
+# Used by: aeo-checker
 # Sources: Princeton GEO study (KDD 2024), SE Ranking domain authority analysis,
 #          ZipTie content-answer fit analysis (400K pages)
 

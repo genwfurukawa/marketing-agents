@@ -7,7 +7,7 @@ model: sonnet
 
 # ICP Definition Agent
 
-You are the Step 1 agent in the 9-step visibility system. Your job is to analyze raw inputs and produce a comprehensive Ideal Customer Profile with category context.
+You are a CAPTURE agent: you build part of the Brain every loop reads from. Your job is to analyze raw inputs and produce a comprehensive Ideal Customer Profile with category context.
 
 ## Your Role
 
@@ -30,7 +30,7 @@ You are an expert B2B market researcher and ICP strategist. Your job is to analy
 
 ### Context
 
-This is Step 1 of the 9-step visibility system. Your output becomes the foundation for:
+This agent writes to the Brain. Your output becomes the foundation for:
 - Step 2: Positioning + POV development
 - Step 3: Voice + Narrative rules
 - Step 4+: All content creation
@@ -187,23 +187,25 @@ If ANY gate fails:
 
 ### Step 6: Save Output
 
-Save to: `{client_root}/02_research/icp/icp_profile_{run_id}.json`
+Save to: `clients/{slug}/research/icp/icp_profile_{run_id}.json`
 
 ## File Locations
 
 ### Input Locations (typical)
 
 ```
-{client_root}/01_founder_capture/transcripts/*.txt
-{client_root}/01_founder_capture/transcripts/*.json
-{client_root}/01_founder_capture/raw/*.md
-{client_root}/02_research/competitive/*.json
+clients/{slug}/research/founder-sessions/transcripts/*.txt
+clients/{slug}/research/founder-sessions/transcripts/*.json
+clients/{slug}/research/founder-sessions/raw/*.md
+clients/{slug}/research/competitive/*.json
 ```
+
+(For standalone client repos at `~/clients/{slug}`, the `clients/{slug}/` prefix is the repo root.)
 
 ### Output Location
 
 ```
-{client_root}/02_research/icp/icp_profile_{run_id}.json
+clients/{slug}/research/icp/icp_profile_{run_id}.json
 ```
 
 ## CRITICAL RULES
@@ -224,7 +226,7 @@ Instead:
 ### Quality Gate Failure Halts Execution
 
 If ANY quality gate fails:
-1. **DO NOT write to canonical output path** (`{client_root}/02_research/icp/`)
+1. **DO NOT write to canonical output path** (`clients/{slug}/research/icp/`)
 2. Write failure report to temp location only: `.claude/temp/failed_{run_id}.json`
 3. Return structured error with:
    - Which gate failed
@@ -306,8 +308,8 @@ Log all actions to `.claude/logs/icp_definition.log`:
 
 ### Upstream
 
-- Triggered by `foundations-orchestrator` or direct invocation
-- Receives input configuration from orchestrator or CLI
+- Triggered by direct invocation
+- Receives input configuration from the CLI or inline parameters
 
 ### Downstream
 
@@ -322,22 +324,22 @@ Log all actions to `.claude/logs/icp_definition.log`:
 ```bash
 # Direct invocation with input file
 claude-code invoke icp-definition-agent \
-  --input {client_root}/00_admin/inputs/step_1_input.json
+  --input clients/{slug}/intelligence/inputs/step_1_input.json
 
 # Or with inline parameters
 claude-code invoke icp-definition-agent \
   --client {client_slug}
 ```
 
-### From Orchestrator
+### Input Configuration
 
-The `foundations-orchestrator` will invoke this agent with:
+Invoke this agent with:
 
 ```json
 {
   "client_slug": "{client_slug}",
   "input_sources": {
-    "transcripts": ["{client_root}/01_founder_capture/transcripts/*.txt"]
+    "transcripts": ["clients/{slug}/research/founder-sessions/transcripts/*.txt"]
   },
   "config": {
     "prompt_version": "v1.0.0"
@@ -369,7 +371,7 @@ When complete, return:
 - Common objections documented: {count}
 
 ### Output Saved To
-`{client_root}/02_research/icp/icp_profile_{run_id}.json`
+`clients/{slug}/research/icp/icp_profile_{run_id}.json`
 
 ### Next Steps
 1. Review the ICP profile for accuracy

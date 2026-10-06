@@ -52,7 +52,7 @@ Write `clients/<slug>/production/<slug>/retro.md`:
 Then **write a lesson to `lessons.md`** per the repo's self-improvement protocol — a flopped
 or winning video is exactly the trigger ("published content underperforms"). If a pattern
 repeats (e.g. thumbnails consistently over-promise), update the owning skill/agent prompt,
-not just the log. The retro only matters if the next video is measurably better.
+not just the log.
 
 ## Upgrade path (out of scope for v1)
 

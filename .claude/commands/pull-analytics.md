@@ -1,5 +1,5 @@
 ---
-description: Pull GA4 + Search Console data for the client. Date-partitioned CSVs and markdown summaries written to research/. Feeds /sprint audit, /sprint retro, /build-audit-report, and content-refresh-agent.
+description: Pull GA4 + Search Console data for the client. Date-partitioned CSVs and markdown summaries written to research/. Feeds the weekly planning review, /build-audit-report, /campaign-retro, and content-refresh-agent.
 argument-hint: [--days 28] [--gsc-only|--ga4-only]
 allowed-tools: Bash, Read, Glob
 ---
@@ -12,8 +12,7 @@ Pulls Google Search Console (queries, pages, impressions, CTR, position) and Goo
 
 | Trigger | Why |
 |---------|-----|
-| `/sprint audit` (Phase 1) | Identify high-impression / low-CTR queries (snippet fixes), surging queries (emerging demand), top traffic pages, source-attributed engagement |
-| `/sprint retro` (Phase 7) | Measure what shipped — week-over-week deltas in sessions, conversions, query positions |
+| `/campaign-retro` | Measure what shipped, week-over-week deltas in sessions, conversions, query positions |
 | `/build-audit-report` | Combine GSC traffic data with AEO citation audit |
 | `content-refresh-agent` | Auto-flag pages with declining position or impressions |
 | Ad hoc | Anytime current performance data is needed |

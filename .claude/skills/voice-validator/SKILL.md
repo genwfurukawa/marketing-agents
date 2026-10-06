@@ -5,8 +5,8 @@ voice rules before publishing. Triggers on: 'check this against our voice rules'
 'does this sound like me', 'validate this post', 'voice check', 'is this on-brand',
 or automatically as a quality gate in the weekly-content-workflow after any writer
 skill produces a draft. For full AEO structure checking, see aeo-checker. For
-complete content production including voice, see linkedin-post-writer or
-blog-post-writer."
+complete content production including voice, see linkedin-post-writer,
+aeo-page-generator, or blog-writer."
 metadata:
   version: 2.0.0
 ---
@@ -33,14 +33,16 @@ You flag what requires human judgment. You do not rewrite for quality.
 
 ## Before Starting
 
-**Check for client context first:**
-Look for `/clients/[slug]/context.md`. The VOICE RULES section contains:
+**Load the active client's config first:**
+Resolve the client per the active client convention (explicit client slug
+argument, else the CLIENT_CONFIG env var pointing at the client's
+config.yaml). Read config.yaml and config/voice-guide.md, which contain:
 - The specific do/don't pairs for this client
 - The client's forbidden words list (in addition to global list)
 - Format specs for each content type
 - Recurring phrases to use (voice markers)
 
-If no context file: apply global rules only and note that client-specific
+If no client config: apply global rules only and note that client-specific
 rules are not available.
 
 **What you need:**
@@ -109,11 +111,11 @@ Is the hook a question?
 
 **Check 4 — Bullet list check**
 Does the post contain a bullet list?
-- Check client context for whether bullets are allowed for this client
-- If context file says NOT ALLOWED: flag for human review
-- If no context file: flag as potential issue, note that lists reduce
+- Check the client's voice guide and config.yaml for whether bullets are allowed
+- If the client config says NOT ALLOWED: flag for human review
+- If no client config: flag as potential issue, note that lists reduce
   citation rate for LinkedIn posts
-- PASS: No bullet list, or bullets explicitly allowed in context
+- PASS: No bullet list, or bullets explicitly allowed in the client config
 
 **Check 5 — Length**
 Word count check:
@@ -122,7 +124,7 @@ Word count check:
 - Over 400 words: FAIL — "Post exceeds 400-word limit. Cut from context
   section first (Part 2), then implication (Part 4). Never cut the insight."
 
-**Check 6 — CTA quality**
+**Check 6 — CTA quality + canonical CTA**
 If a CTA is present (final 1–2 lines):
 - FAIL patterns (flag + auto-replace):
   "What do you think?" → Remove or replace with specific question
@@ -130,7 +132,19 @@ If a CTA is present (final 1–2 lines):
   "Follow for more" → Remove
   "Found this helpful? Repost." → Remove
   "Share with someone who needs this" → Remove
-- PASS: CTA is a specific question OR post ends on implication with no CTA
+
+**Canonical CTA enforcement** (read the active client's `config.yaml` →
+`canonical_cta`; skip this sub-check entirely if the key is absent):
+- `canonical_cta.text` + `canonical_cta.url` define the pinned default close;
+  `canonical_cta.note` (optional) names the approved stage variants and when
+  overriding is legitimate.
+- If the post closes on a link/offer CTA that is NOT the canonical CTA and NOT
+  an approved variant, flag it: "Off-list CTA. Default is {label} ({url}). Use
+  a stage variant only on purpose." Do NOT auto-swap — the writer may have
+  overridden deliberately; flag for confirmation.
+- If the canonical CTA is present but the URL is wrong or missing, auto-fix the URL.
+- PASS: CTA is the canonical CTA, an approved variant, a specific question, or
+  the post ends on implication with no CTA.
 
 **Check 7 — Forbidden words**
 Scan full text for global forbidden words + any client-specific additions.
@@ -241,7 +255,7 @@ Same as global check.
 ```
 VOICE VALIDATION REPORT
 Format: [FORMAT_TYPE]
-Client: [slug or "no context file loaded"]
+Client: [slug or "no client config loaded"]
 Status: PASS | PASS WITH AUTO-FIXES | NEEDS HUMAN REVIEW | FAIL
 
 ---

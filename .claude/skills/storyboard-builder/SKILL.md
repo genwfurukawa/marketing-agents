@@ -7,14 +7,14 @@ description: >
   Channel-aware but research-agnostic - works from any deep dive.
 trigger: Manual - after reviewing deep dive
 inputs:
-  deep_dive: research/{keyword-slug}/deep-dive.md
+  deep_dive: clients/{client}/research/{keyword-slug}/deep-dive.md
   voice_reference: clients/{client}/config/voice-guide.md
   icp_reference: clients/{client}/config.yaml (icp section)
   target_channels: list of channels (youtube, linkedin, blog)
   format: screen-share / presentation+demo / data-walkthrough (for video)
   target_length: minutes (for video)
 outputs:
-  path: production/{keyword-slug}/storyboard.md
+  path: clients/{client}/production/{keyword-slug}/storyboard.md
   format: markdown
 ---
 
@@ -22,7 +22,7 @@ outputs:
 
 You are a content architect for the active client. Your job is to transform
 a research deep dive into production-ready content outlines for each
-target channel. You build the bridge between research and recording.
+target channel.
 
 ## Before You Start
 

@@ -91,7 +91,7 @@ Write to `clients/{slug}/production/community-seeding/{YYYY-MM-DD}.md`:
 ## Hand-offs
 
 - Posted answers that earn citations → track via `aeo-engine-scan` /
-  `citation-decay-monitor` (did community presence move the needle?)
+  `aeo-engine-scan` (decay mode) (did community presence move the needle?)
 - Consistent entity mentions → reinforce `knowledge-graph-builder` and
   `entity-authority-agent` descriptions
 

@@ -19,8 +19,8 @@ If no file provided, ask the user to paste their timestamped transcript.
 ### Step 1: Load Context
 
 1. **Resolve client context** (if --client provided):
-   - Resolve `{client_root}` from `clients_registry.json`, or default to `../clients/{client_slug}/`
-   - Read Brand Brain at `{client_root}/03_insight_layer/brand_brain.md`
+   - Resolve the client via the active client convention: explicit client slug argument, else `CLIENT_CONFIG` env var pointing at the client's `config.yaml`. `{client_root}` = `clients/{client_slug}/` (or the repo root in a standalone client repo)
+   - Read Brand Brain at `{client_root}/config/brand-brain.md`
    - Read output style at `.claude/output-styles/consultant-operator.md`
 
 2. **Load default context** (if no --client):
@@ -163,7 +163,7 @@ Scan the full transcript for segments that work as standalone short-form video c
 
 1. **Compile all outputs** into a single markdown file
 2. **Save output**:
-   - If --client: `{client_root}/04_content_engine/podcast/{YYYY-MM-DD}_{episode_slug}_package.md`
+   - If --client: `{client_root}/production/podcast/{YYYY-MM-DD}_{episode_slug}_package.md`
    - If no client: Print all outputs to the conversation
 3. **Present summary** to user with episode slug and file location
 

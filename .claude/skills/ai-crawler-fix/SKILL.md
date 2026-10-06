@@ -4,9 +4,11 @@ description: "Use when an AI crawler audit found blocked bots, a missing/stale
 sitemap, or no AI-bot policy, and you need the actual files to fix it. Triggers on:
 'fix my robots.txt for AI', 'unblock GPTBot/ClaudeBot/PerplexityBot', 'generate a
 robots.txt', 'my AI crawler audit failed', 'generate a sitemap', 'make AI bots able
-to crawl my site'. Takes ai-crawler-audit-agent output (or a site URL) and produces
-a corrected robots.txt AI-bot ruleset + a sitemap stub/recommendation. Pairs with
-llms-txt-generator. This generates file content; it does not deploy anything."
+to crawl my site', 'generate llms.txt', 'create an llms.txt', 'add an LLM manifest',
+'make my site AI-crawlable'. Takes ai-crawler-audit-agent output (or a site URL) and
+produces the three legs of technical AI readiness: a corrected robots.txt AI-bot
+ruleset, a sitemap stub/recommendation, and a curated llms.txt.
+This generates file content; it does not deploy anything."
 metadata:
   version: 1.0.0
 ---
@@ -15,9 +17,9 @@ metadata:
 
 `ai-crawler-audit-agent` *diagnoses* crawler-access problems (blocked bots, missing
 sitemap, no llms.txt) and scores them. This skill *remediates* them: it generates
-the corrected `robots.txt` AI-bot ruleset and a `sitemap.xml` recommendation or
-stub. It closes the loop on Dimension 5 (Technical AI Readiness) of the visibility
-rubric — audit finds, this fixes.
+the corrected `robots.txt` AI-bot ruleset, a `sitemap.xml` recommendation or stub,
+and a curated `llms.txt`. It closes the loop on Dimension 5 (Technical AI Readiness)
+of the visibility rubric — audit finds, this fixes.
 
 ## Before Starting
 
@@ -114,7 +116,7 @@ Rules:
   (new AEO pages, no `<lastmod>`, doesn't cover key pages) and give the exact
   entries to add.
 - **If no sitemap exists**: generate a `sitemap.xml` stub from the page inventory
-  (same inventory `llms-txt-generator` uses — sitemap, audit top-pages, or pasted
+  (same inventory Step 3 uses — sitemap, audit top-pages, or pasted
   list). Include `<lastmod>` (use the known publish/update date; never fabricate a
   date — if unknown, omit `<lastmod>` for that URL rather than guessing).
 
@@ -130,23 +132,73 @@ Rules:
 </urlset>
 ```
 
-## Step 3 — Cross-check llms.txt
+## Step 3 — Generate llms.txt
 
-Note whether `/llms.txt` exists. If not, tell the user to run `llms-txt-generator` —
+`llms.txt` is a Markdown file at the site root that gives LLMs a curated map of
+the site: a one-line description, then sections of links with short context — a
+prioritized, human-readable sitemap for AI crawlers. It is a discovery and
+prioritization signal, not an access-control file (that's robots.txt, Step 1).
 robots.txt access + a sitemap + llms.txt are the three legs of technical AI
-readiness, and shipping one without the others leaves points on the table.
+readiness; ship all three together.
+
+If `/llms.txt` already exists and the audit scored it fine, skip this step.
+
+**Inputs:** the same page inventory as Step 2, plus the entity description — the
+locked Tagline/Short description from `entity-authority-agent` output if it
+exists, otherwise `clients/{slug}/config.yaml` `brand`. Never invent URLs — every
+link must resolve.
+
+Classify pages by AI-answer value and write, following the llms.txt spec:
+
+```
+# {Company Name}
+
+> {One-sentence description — what the company does, for whom. Use the locked
+> Tagline. No marketing fluff, no banned phrases.}
+
+## Core
+- [{Page title}](https://{domain}/{path}): {8-15 word description of what's on it}
+- [Pricing](https://{domain}/pricing): {what plans/model}
+
+## Guides
+- [{Guide title}](https://{domain}/{path}): {what question it answers}
+
+## AEO Pages
+- [What is {term}](https://{domain}/{path}): {the definition it owns}
+- [{A} vs {B}](https://{domain}/{path}): {the comparison verdict}
+
+## Proof
+- [{Case study}](https://{domain}/{path}): {the result, with the metric}
+
+## Optional
+- [Blog](https://{domain}/blog): {what topics}
+```
+
+Rules:
+- The `>` blockquote description is mandatory and must be self-contained.
+- Every bullet: `[title](absolute-url): description` — say what's actually
+  answerable on the page, for the model, not for SEO.
+- Order sections by citation value (Core → Guides → AEO → Proof → Optional).
+  Drop login, cart, legal boilerplate, tag/pagination, anything thin.
+- Curated, not a dump: a good llms.txt is 20-60 links.
+- Optional `llms-full.txt` (only when explicitly requested): same header, then
+  inline the actual extractable content of the top 5-15 pages under
+  `## {Page title}` headers, pulled via WebFetch — never fabricated.
 
 ## Output
 
 Write to `clients/{slug}/production/technical/`:
 - `robots.txt` (the corrected ruleset, or a diff against the existing one)
 - `sitemap.xml` (stub or the list of additions)
+- `llms.txt` (and `llms-full.txt` if requested)
 
 Plus a deploy note:
 > Replace `https://{domain}/robots.txt` with this file. {If applicable: "Your
 > current robots.txt blocks {bots} via {rule} — that's why you score 0 on crawler
 > access."} Upload the sitemap to the site root and submit it in Google Search
-> Console. Then run `llms-txt-generator` if `/llms.txt` is missing.
+> Console. Place llms.txt at `https://{domain}/llms.txt` and re-generate it when
+> new AEO pages publish — an llms.txt is useless if the crawlers are blocked, so
+> ship it with the robots.txt fix.
 
 ## Quality Gate
 
@@ -156,4 +208,6 @@ Plus a deploy note:
 - [ ] `Sitemap:` line present and correct
 - [ ] No fabricated `<lastmod>` dates
 - [ ] Training-bot tradeoff surfaced, not silently decided
-- [ ] Deploy note names the root cause and the next step (llms.txt)
+- [ ] llms.txt: every URL absolute and resolving, `>` description self-contained,
+      curated (20-60 links), no banned phrases (client `voice.never_say` + lessons)
+- [ ] Deploy note names the root cause and ships all three legs together

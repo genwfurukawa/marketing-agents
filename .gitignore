@@ -1,8 +1,5 @@
-.env
-*.local
 __pycache__/
-*.pyc
-.venv/
-node_modules/
+*.py[cod]
+.env
+results/
 .DS_Store
-*.code-workspace

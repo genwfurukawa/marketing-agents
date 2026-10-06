@@ -6,7 +6,7 @@ tags: [sop, index]
 
 # SOP Index — {{REPO_NAME}}
 
-The master list of Standard Operating Procedures for {{REPO_NAME}}. Every repeatable process lives here. If you do something twice, it becomes an SOP.
+The master list of Standard Operating Procedures for {{REPO_NAME}}. The home for infrastructure and tooling SOPs (Notion, Slack, automations). Client-delivery SOPs live in the business repo, not here. If you run an internal process twice, it becomes an SOP.
 
 ## What is an SOP
 
@@ -37,9 +37,6 @@ Rules:
 ## Related
 
 - Template: [[sop-template]]
-- Daily notes: [[../daily/]]
-- Playbooks (strategic, not step-by-step): [[../playbooks/]]
-- Methodology (the why behind the how): [[../methodology/]]
 - Corrections log: `lessons.md` at repo root
 
 ## Status definitions

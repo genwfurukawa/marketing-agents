@@ -10,7 +10,6 @@ user, not in this repo):
 
 | Server | Purpose |
 |--------|---------|
-| Ahrefs | Brand Radar AI visibility data — used by [ahrefs-pull](.claude/skills/ahrefs-pull/SKILL.md) |
 | Notion | Data layer for Query Bank, Insight Log, Content Calendar, Pipeline, Visibility Scores, Engagement Signals |
 | Gmail / Google Calendar / Google Drive | Comms + scheduling + asset storage |
 | Canva | Design assets, brand templates |
@@ -33,24 +32,17 @@ Production scripts live in `scripts/`. Each bundle is self-contained.
 | [scripts/aeo_audit/](scripts/aeo_audit/) | AEO audit pipeline — Perplexity, Claude direct, query templates, analyzer, report generator. See [README](scripts/aeo_audit/README.md) and [CLAUDE.md](scripts/aeo_audit/CLAUDE.md) |
 | [scripts/google/](scripts/google/) | GA4 + Search Console pulls — `auth.py`, `ga4_pull.py`, `gsc_pull.py`, `pull_all.py` |
 | [scripts/image/](scripts/image/) | Brand image generation via Nano Banana (Gemini) — `gemini_image_client.py`, `brand_image_generator.py`, `generate_from_json.py` |
-| [scripts/linkedin/](scripts/linkedin/) | LinkedIn intelligence — `content_intel.py`, `engager_pipeline.py` |
 | [scripts/youtube/](scripts/youtube/) | YouTube scaffolding — `scaffold_video.py`, `parse_srt.py` |
-| [scripts/notion_setup_client.py](scripts/notion_setup_client.py) | One-shot Notion HQ + Marketing Hub setup for a new client |
-
-Top-level [scripts/README.md](scripts/README.md) has setup + usage notes.
 
 ## Configuration
 
 | File | Purpose |
 |------|---------|
 | [.claude/settings.local.json](.claude/settings.local.json) | Per-user Claude Code settings (permissions, hooks, env). Gitignored or local-only depending on contents. |
-| [.claude/CLAUDE_SETTINGS_GUIDE.md](.claude/CLAUDE_SETTINGS_GUIDE.md) | How the settings file is structured + which keys matter |
-| [.claude/content-skill-architecture.md](.claude/content-skill-architecture.md) | Reference doc for how content skills compose (input/output contracts, chaining) |
-| [.env.example](.env.example) | API key schema (Ahrefs, OpenAI, Anthropic, Gemini, Notion, etc.) |
+| [.env.example](.env.example) | API key schema (OpenAI, Anthropic, Perplexity, Gemini, Notion, etc.) |
 | [.gitignore](.gitignore) | Tracked exclusions including `**/node_modules/`, `venv/`, `.env`, client outputs |
 
 ## Integration Specs
 
 | Doc | Purpose |
 |-----|---------|
-| [docs/NOTION_WORKSPACE_SPEC.md](docs/NOTION_WORKSPACE_SPEC.md) | Canonical Notion workspace shape — databases, properties, relations. Source of truth for `/clone-ops` Notion provisioning. |

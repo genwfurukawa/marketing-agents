@@ -141,7 +141,7 @@ Present the final draft with injection markers so the user can review each inser
 ### Final: Save and Summarize
 
 1. **Save the output:**
-   - If --client: Save to `{client_root}/04_content_engine/{format}/drafts/{YYYY-MM-DD}_{topic_slug}.md`
+   - If --client: Save to `{client_root}/production/{format}/drafts/{YYYY-MM-DD}_{topic_slug}.md`
    - If no client: Print the final draft to the conversation
 
 2. **Include metadata block at the top of the saved file:**
