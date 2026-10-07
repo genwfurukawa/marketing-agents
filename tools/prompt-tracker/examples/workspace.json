@@ -1,0 +1,59 @@
+{
+  "projects": [
+    {
+      "id": "demo",
+      "name": "Demo Studio",
+      "domain": "demo.example",
+      "competitors": [
+        "Example Mail",
+        "Example Commerce"
+      ],
+      "description": "Synthetic setup: independent creators selling digital templates. No real answers are preloaded."
+    }
+  ],
+  "prompts": [
+    {
+      "id": "D01",
+      "projectId": "demo",
+      "text": "I sell digital templates and want email, checkout and automated follow-up. Which platforms should I compare?",
+      "group": "Discovery",
+      "purpose": "Example buyer question; replace with your own company research.",
+      "version": 1,
+      "active": true,
+      "createdAt": "2026-10-07T00:00:00Z"
+    },
+    {
+      "id": "D02",
+      "projectId": "demo",
+      "text": "I am a photographer and need branded newsletters and a welcome sequence. Which tools should I consider?",
+      "group": "Discovery",
+      "purpose": "Example buyer question; replace with your own company research.",
+      "version": 1,
+      "active": true,
+      "createdAt": "2026-10-07T00:00:00Z"
+    },
+    {
+      "id": "C01",
+      "projectId": "demo",
+      "text": "Demo Studio vs Example Mail: compare design, automation, commerce and pricing for a solo creator.",
+      "group": "Comparison",
+      "purpose": "Example buyer question; replace with your own company research.",
+      "version": 1,
+      "active": true,
+      "createdAt": "2026-10-07T00:00:00Z"
+    },
+    {
+      "id": "A01",
+      "projectId": "demo",
+      "text": "What are Demo Studio\u2019s current pricing and workflow limits? Cite current official sources.",
+      "group": "Accuracy",
+      "purpose": "Example buyer question; replace with your own company research.",
+      "version": 1,
+      "active": true,
+      "createdAt": "2026-10-07T00:00:00Z"
+    }
+  ],
+  "answers": [],
+  "content": [],
+  "experiments": []
+}

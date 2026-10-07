@@ -107,3 +107,7 @@ first: [supermarketers.ai](https://www.supermarketers.ai)
 
 Built by [Gen Furukawa](https://www.linkedin.com/in/genfurukawa) at SuperMarketers.
 Operators, not an agency.
+
+## Open-source prompt tracking
+
+[SuperMarketers Prompt Tracker](tools/prompt-tracker/README.md) is a local-first dashboard and API runner for buyer-question research. Read the [public PRD](docs/prds/prompt-tracker.md) to learn the architecture, evidence rules and roadmap. Four model/provider routes are distinguished from consumer apps and Google AI Overviews.

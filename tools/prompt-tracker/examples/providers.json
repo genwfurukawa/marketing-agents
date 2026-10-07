@@ -1,0 +1,10 @@
+{
+  "repetitions": 1,
+  "maxRequests": 20,
+  "providers": [
+    {"label":"ChatGPT","provider":"OpenAI","model":"REPLACE_WITH_AVAILABLE_OPENAI_MODEL","search":true,"searchBackend":"OpenAI web search"},
+    {"label":"Gemini","provider":"Google","model":"REPLACE_WITH_AVAILABLE_GEMINI_MODEL","search":true,"searchBackend":"Google Search grounding"},
+    {"label":"Claude","provider":"Anthropic","model":"REPLACE_WITH_AVAILABLE_CLAUDE_MODEL","search":true,"searchBackend":"Anthropic web search"},
+    {"label":"Perplexity","provider":"Perplexity","model":"REPLACE_WITH_AVAILABLE_AGENT_MODEL","search":true,"searchBackend":"Perplexity web search"}
+  ]
+}
