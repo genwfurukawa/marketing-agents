@@ -19,7 +19,7 @@ The client config supplies:
     visual_style.colors.background
     visual_style.colors.text_primary
     visual_style.colors.text_secondary
-    visual_style.font
+    visual_style.brand_font                 # falls back to visual_style.font
     visual_style.logos.{white,yellow,black}   # paths relative to the config dir
     visual_style.brand_prompt_rules           # list of one-line prompt rules
 
@@ -147,7 +147,9 @@ def _load_brand_config(client_config_path: Optional[Path], logger: logging.Logge
 
     return {
         "colors": colors,
-        "font": visual.get("font") or DEFAULT_BRAND["font"],
+        # brand_font is the brand typeface; a bare `font` key can belong to another
+        # style block (growth's diagram settings use font: hand-drawn)
+        "font": visual.get("brand_font") or visual.get("font") or DEFAULT_BRAND["font"],
         "logos": logos,
         "prompt_rules": visual.get("brand_prompt_rules") or DEFAULT_BRAND["prompt_rules"],
         "config_dir": config_dir,

@@ -1,0 +1,64 @@
+# Demo brand for /edit-recording. Copy this block into your own config.yaml
+# (or point the skill at a copy of this file) and replace the values.
+# Paths are relative to the directory holding this file.
+
+client:
+  name: "Acme Analytics"
+
+visual_style:
+  # Optional: point at your site's stylesheet so `brand.py check` fails when the
+  # palette below drifts from it. Tokens are read from :root, e.g. --acme-blue.
+  # source_css: "../website/site.css"
+  # source_css_prefix: "--acme-"
+
+  # Older tools (like scripts/image/brand_image_generator.py) read these keys.
+  # Every value must also be in the palette.
+  colors:
+    primary_accent: "#00C2A8"
+    background: "#0E1116"
+    text_primary: "#FFFFFF"
+    text_secondary: "#5B6472"
+  brand_font: "Inter"
+
+  # Every color a branded video may use. Anything else fails `brand.py lint`.
+  palette:
+    blue: "#0B5FFF"
+    teal: "#00C2A8"
+    night: "#0E1116"
+    slate: "#5B6472"
+    cloud: "#F4F6F9"
+    white: "#FFFFFF"
+  # What each color is for. Generated captions, lower thirds and end cards only use roles.
+  roles:
+    bg: night
+    surface: white
+    text: white
+    text-on-surface: night
+    muted: slate
+    accent: teal
+    accent-text: night
+    secondary: blue
+    highlight-bg: teal
+    highlight-text: night
+    border: night
+  fonts:
+    display: {family: "Inter", fallback: sans-serif, case: uppercase, weight: 800,
+              files: [{src: "fonts/Inter-variable.woff2", weight: "100 900"}]}
+    body: {family: "Inter", fallback: sans-serif, case: none,
+           files: [{src: "fonts/Inter-variable.woff2", weight: "100 900"}]}
+  logo_files:
+    on-dark: "logos/logo-on-dark.svg"
+    on-light: "logos/logo-on-light.svg"
+  shape:
+    radius_px: 0
+    border_px: 4
+    shadow_px: 12
+  video:
+    captions: {font: body, weight: 800, size_px: 58, max_words: 5, max_gap_s: 0.6,
+               text: text, box: bg, box_opacity: 0.82, active_word: highlight, bottom_px: 96}
+    lower_third: {name_font: display, title_font: body, start_s: 1.0, duration_s: 5.0,
+                  left_px: 96, bottom_px: 220}
+    logo_bug: {logo: on-dark, corner: top-right, height_px: 40, margin_px: 56, opacity: 0.95}
+    end_card: {seconds: 4.0, logo: on-dark, cta: "Book a demo", url: "example.com"}
+    safe_zone_px: {landscape: 96}
+    audio: {loudness_lufs: -14, true_peak_dbtp: -1.5}
