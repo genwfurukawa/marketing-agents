@@ -25,8 +25,8 @@ their day-90 Pulse — that continuity is the sales story.
 | Depth | Product | Scope | Turnaround |
 |---|---|---|---|
 | `snapshot` | Free audit (sales tool) | 10 prompts, ChatGPT + Perplexity, score + top 3 gaps | Same day, automated |
-| `gameplan` | $500 tripwire | ~50 prompts, 4 engines, all six sections graded, plan + 30-min walkthrough | 1 week |
-| `baseline` | Inside the $4,500 Sprint | 100 prompts, 4 engines, all six sections, full deliverable set, 90-day plan | Days 3-10 of Sprint |
+| `gameplan` | Diagnostic, not sold separately | ~50 prompts, 4 engines, all six sections graded, plan + 30-min walkthrough | 1 week |
+| `baseline` | Month one of the engagement | 100 prompts, 4 engines, all six sections, full deliverable set, 90-day plan | Days 3-10 of month one |
 | `pulse` | Inside the Loop | Full portfolio re-run, deltas vs Baseline | Weekly, automated |
 
 ## Prerequisites (verify, don't assume)

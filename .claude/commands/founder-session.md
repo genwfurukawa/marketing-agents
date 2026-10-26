@@ -139,4 +139,4 @@ Before running on a client, run on yourself:
 /founder-session --transcript ~/Desktop/my_voice_memo_2026-05-11.txt
 ```
 
-Validate the output is high-quality, then offer the same flow to retainer clients as the monthly Founder Voice Session ($1,500 standalone wedge product if not on retainer).
+Validate the output is high-quality, then offer the same flow to retainer clients as the monthly Founder Voice Session.

@@ -147,7 +147,7 @@ clients/{client}/production/aeo_pages/{page_type}/{topic_slug}/
 
 1. **Templates are not suggestions.** Every required structural element from `templates/aeo_page_types/{type}.md` must be in the output. The extraction block, the comparison table, the FAQ block, the verdict box - all required.
 
-2. **Specificity over fluency.** "30 minutes per month" beats "fast and easy." "$8,500/month" beats "affordable." Templates require specific numbers; do not soften.
+2. **Specificity over fluency.** "30 minutes per month" beats "fast and easy." "$49 per seat" beats "affordable." Templates require specific numbers; do not soften.
 
 3. **Honest comparison.** When generating comparison or competitor_review pages, the competitor MUST win some rows. LLMs detect one-sided content and discount it.
 
