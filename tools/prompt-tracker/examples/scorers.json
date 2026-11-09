@@ -1,0 +1,13 @@
+{
+  "jevModel": "jev-1.13.0",
+  "openaiModel": "REPLACE_WITH_AVAILABLE_OPENAI_SCORING_MODEL",
+  "maxRequests": 50,
+  "comparisons": {
+    "C01": {
+      "competitor": "Example Mail",
+      "subjectProduct": "",
+      "competitorProduct": "",
+      "feature": ""
+    }
+  }
+}

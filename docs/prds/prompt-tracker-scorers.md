@@ -1,7 +1,7 @@
 # Prompt tracker scorers: stacked draft
 
-Status: implementation plan. Depends on the collection, sources and inventory PR.
-No scoring code or paid model runs are included in this draft yet.
+Status: implemented draft. Depends on the collection, sources and inventory PR.
+Provider contracts are fixture-tested; no paid scoring calls have been made.
 
 ## Outcome
 
@@ -13,8 +13,10 @@ does not crawl sites or regenerate answers.
 
 ## First scope
 
-- Identify subject and tracked-competitor mentions.
-- Identify recommendations, keeping a mention distinct from a recommendation.
+- Score captured Comparison answers only; Discovery and Accuracy answers are untouched.
+- Use explicit subject/product names for basic mention detection.
+- Identify a single overall recommendation within the configured pair, keeping a
+  mention, a conditional comparison and a recommendation distinct.
 - For comparison prompts, distinguish a single overall winner, a conditional or
   balanced comparison, and an answer that does not compare the products.
 - Retain supporting passages and the scorer/provider/model version for each
@@ -22,8 +24,9 @@ does not crawl sites or regenerate answers.
 - Map approved labels into the existing mentioned, recommended and recommended
   brands fields. Preserve the human-review flag and manual editing path.
 
-Claims, factual accuracy, vocabulary, feature-level assessment authoring and
-playbook generation are outside this first scorer port.
+Short subject/competitor assessments and exact supporting passages accompany the
+three S7 decisions. Claims, factual accuracy, vocabulary, feature-roster scoring,
+per-table-row judgments and playbook generation remain outside this first port.
 
 ## Provider split
 
@@ -64,6 +67,20 @@ an answer collected from any supported engine can use the same scorer contract.
   preservation and existing metric denominators at the backend boundary.
 - Run the existing npm tests and build. Live scoring requires a separately bounded
   run with an explicit request cap; fixtures do not establish model quality.
+
+## Operator flow
+
+Collect and import answers using PR #1. Copy the example scorer config, map each
+Comparison prompt ID to a tracked competitor, and configure the available OpenAI
+model. Run `scripts/score.py` with `--dry-run`, then run the bounded scoring command.
+The CLI attaches suggestions to the current local workspace without changing
+manual labels or review status. Refresh the dashboard, open an answer, inspect
+the supporting passages and use or correct the suggested labels. Confirm review
+through the existing Edit capture form before results enter win-rate metrics.
+
+The Overview reports per-competitor and weekly UTC results using the canonical
+`wins / (wins + losses + ties)` denominator. Unreviewed, unscored, held and
+not-compared answers do not count as decided comparisons.
 
 ## Stack
 

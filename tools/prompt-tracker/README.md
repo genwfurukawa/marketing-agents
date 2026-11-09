@@ -2,7 +2,7 @@
 
 An MIT-licensed, local-first dashboard for buyer-question research across OpenAI, Gemini, Claude and Perplexity APIs. Save answers, inspect citations, review recommendations, and connect findings to content changes. No private hosting account, ChatGPT sign-in, client dataset or company-specific scoring is required.
 
-**Release 0.1 is a learning tool:** manual/CSV capture, local SQLite persistence, four provider adapters and resumable CLI runs. Recommendation scoring is human-reviewed. Schedules, analytics integrations, automated classification and Google AI Overviews API collection remain roadmap items. Actual model availability and search-tool support depend on your provider account.
+**Release 0.1 is a learning tool:** manual/CSV capture, local SQLite persistence, four provider adapters and resumable CLI runs. Recommendation scoring is human-reviewed. An optional Jev/OpenAI scorer supplies reviewable head-to-head suggestions. Schedules, analytics integrations, discovery classification and Google AI Overviews API collection remain roadmap items. Actual model availability and search-tool support depend on your provider account.
 
 ## Start the dashboard
 
@@ -179,6 +179,70 @@ captures record `sourceParserVersion`. Existing captures are not silently rewrit
 competitor domain mappings are part of the workspace backup. To move the complete local
 setup, stop the dashboard and collection commands, then copy the entire `.data/`
 directory (including any SQLite WAL files). Do not commit it. The inventory uses the same built-in Node SQLite as the dashboard.
+
+## Head-to-head scoring (optional)
+
+This scores saved **Comparison** answers, using Jev/TypeSafe for three bounded
+S7 decisions (scope winner, unconditional overall recommendation and whether the
+answer actually compares the pair). OpenAI supplies short named assessments and
+verbatim evidence. Discovery and Accuracy prompts are untouched. Source URL
+extraction still makes no model calls. Claude Code is not required.
+
+1. Collect/import answers first. Copy `examples/scorers.json` to
+   `.data/scorers.json` and replace the OpenAI model placeholder with an exact
+   available model supporting structured output. Confirm access to the pinned
+   Jev model (`jev-1.13.0` by default).
+2. In `comparisons`, map each Comparison prompt ID to one tracked competitor.
+   Optional `subjectProduct` and `competitorProduct` establish explicit product
+   ownership. Optional `feature` supplies the comparison scope/definition; omit
+   it to judge the whole question. No company-specific synonym inference.
+3. Set `TYPESAFE_API_KEY` and `OPENAI_API_KEY` in `.env`, then run:
+
+```bash
+python3 scripts/score.py --project YOUR_PROJECT_ID --config .data/scorers.json --output captures/scores-week-1 --env .env --dry-run
+python3 scripts/score.py --project YOUR_PROJECT_ID --config .data/scorers.json --output captures/scores-week-1 --env .env
+```
+
+The dry run reads saved answers and validates configuration/size without reading
+keys or making requests. Normal scoring makes up to two paid requests per answer
+with five workers, bounded by one durable `maxRequests` cap (not a dollar budget).
+It performs no automatic retries. OpenAI requests set `store: false`.
+
+Refresh the dashboard after scoring. In **Answer evidence**, open a Comparison
+answer and review **Head-to-head labels**. **Use suggested labels** copies the
+suggestion into editable labels and resets review. You can also set comparison
+labels manually. Use **Edit capture** to confirm review afterward. Scoring itself
+never overwrites manual labels, notes or human-review status.
+
+Suggestions are stored alongside the answer, with scorer/model versions,
+source-text hash, exact receipt text and offsets. Raw scorer responses remain in
+the ignored output folder, separate from collection captures. Quotes must bind to
+actual answer text; the same canonical matcher permits case/whitespace variants
+while retaining the snapshot's exact characters. Missing receipts, invalid
+provider judgments, incomplete output, off-pair overall picks and unsupported
+input sizes are held, not converted into negative labels. No answer/roster is
+silently truncated to make it fit. Holds never enter metrics.
+
+Resume with the same output folder to reuse completed scores and saved Jev
+judgments. Raise `maxRequests` explicitly if the cap was exhausted. Interrupted
+submissions become `SubmissionUnknown`; inspect provider history before starting
+a new round. A new output folder is a new paid scoring round. Changed answer,
+prompt, pair or model configuration requires a new folder. Workspace writes happen
+only after provider work, in a short SQLite transaction; edited answers/project
+identities are checked again before suggestions are attached. The dashboard's
+workspace size limit is preserved. Keep unsaved forms closed while scoring and
+refresh afterward; existing stale-write protection remains in place.
+
+The Overview shows reviewed head-to-head wins/losses/ties by competitor and UTC
+week. Win rate is **wins / (wins + losses + ties)**. `not_compared` is excluded
+rather than counted as a loss. Overall recommendations take priority over the
+scope verdict; substantive comparisons with no net pick are ties. Existing
+Discovery recommendation metrics remain unchanged. Keep prompt versions and
+collection conditions fixed before interpreting weekly movement.
+
+Fixture tests verify contracts, not real model quality or account availability.
+A small live cohort still needs separate bounded verification with the intended
+models and keys before relying on automated suggestions.
 
 ## What each surface means
 
