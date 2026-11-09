@@ -6,7 +6,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {DatabaseSync} from 'node:sqlite';
 import {inventoryStore,domainHost,pageURL,citationCounts,EMBEDDING_DIMENSIONS} from '../src/inventory-store.mjs';
-import {sourceOwner} from '../src/lib/source-ownership.mjs';
+import {sourceOwner,registeredDomain} from '../src/lib/source-ownership.mjs';
 import {parseCSV} from '../src/lib/core.mjs';
 import {refreshInventory,parsePage,embeddingInput,scopedURL,isPublicIP,publicRequest} from '../scripts/inventory-crawl.mjs';
 
@@ -136,7 +136,6 @@ test('one competitor has many domains; descendants match without matching lookal
  assert.equal(sourceOwner('https://vanta-alt.com/a',project).name,'Vanta');
  assert.equal(sourceOwner('https://vanta.com.evil.com/a',project).kind,'Third-party');
  assert.equal(sourceOwner('https://docs.client.com/a',project).kind,'First-party');
- assert.equal(sourceOwner('https://other-owned.com/a',project,['other-owned.com']).kind,'First-party');
  assert.equal(sourceOwner('https://docs.other-owned.com/a',{...project,ownedDomains:['other-owned.com']}).kind,'First-party');
 });
 
@@ -176,6 +175,18 @@ test('inventory rows and writer ownership remain separate for two client project
  assert.equal(store.pages(second.id).length,0);assert.equal(store.page(page.id).project_id,'client');
  assert.throws(()=>store.index(page.id,otherToken,'hash',vector()),/ownership lost/);
  store.finish(domain.id,token,'Complete');store.finish(second.id,otherToken,'Complete');
+});
+
+test('removing an owned domain revokes classification despite retained inventory history',t=>{
+ const {store}=setup(t);const domain=store.add('client','former.example');
+ const project={name:'Client',domain:'example.com',ownedDomains:['former.example'],competitors:[]};
+ assert.equal(registeredDomain(project,domain.host),true);
+ assert.equal(sourceOwner('https://docs.former.example/page',project).kind,'First-party');
+ const removed={...project,ownedDomains:[]};
+ assert.equal(registeredDomain(removed,domain.host),false);
+ assert.ok(store.list('client').some(row=>row.host==='former.example')); // Retained history is not an ownership rule.
+ assert.equal(sourceOwner('https://docs.former.example/page',removed,store.list('client').map(d=>d.host)).kind,'Third-party');
+ assert.equal(sourceOwner('https://former.example/page',{...removed,competitors:['Other'],competitorDomains:[{name:'Other',domain:'former.example'}]}).kind,'Competitor');
 });
 
 test('capture import uses all explicitly owned domains without absorbing competitor sources',t=>{

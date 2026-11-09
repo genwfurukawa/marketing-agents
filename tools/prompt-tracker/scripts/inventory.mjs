@@ -4,6 +4,7 @@ import {fileURLToPath} from 'node:url';
 import {workspaceStore} from '../src/storage.mjs';
 import {inventoryStore,domainHost} from '../src/inventory-store.mjs';
 import {refreshInventory} from './inventory-crawl.mjs';
+import {registeredDomain} from '../src/lib/source-ownership.mjs';
 
 const {values}=parseArgs({options:{project:{type:'string'},domain:{type:'string'},env:{type:'string',default:'.env'},'max-pages':{type:'string',default:'200'},'dry-run':{type:'boolean',default:false}}});
 let inventory;
@@ -15,7 +16,7 @@ try {
   const workspace=workspaceStore(fileURLToPath(new URL('.data/workspace.sqlite',root)),JSON.parse(readFileSync(new URL('examples/workspace.json',root),'utf8')));
   let project;try{project=workspace.read().data.projects.find(p=>p.id===values.project);}finally{workspace.close();}
   if(!project)throw Error('Unknown project ID. Copy the command from Site inventory.');
-  if(![project.domain,...(project.ownedDomains||[])].filter(Boolean).some(value=>{try{return domainHost(value)===host;}catch{return false;}}))throw Error('Add this owned domain in Site inventory before running its command.');
+  if(!registeredDomain(project,host))throw Error('Add this owned domain in Site inventory before running its command.');
   if(values['dry-run']) {
     console.log(`Project: ${project.name}; domain: ${host}; at most ${maxPages} pages; five workers; one local vector per page. No network requests made.`);
   } else {

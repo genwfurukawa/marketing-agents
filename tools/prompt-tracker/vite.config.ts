@@ -5,7 +5,7 @@ import {fileURLToPath} from 'node:url';
 import {workspaceStore} from './src/storage.mjs';
 import {workspaceSchema} from './src/lib/validation';
 import {inventoryStore,citationCounts,pageURL,domainHost} from './src/inventory-store.mjs';
-import {sourceOwner} from './src/lib/source-ownership.mjs';
+import {sourceOwner,registeredDomain} from './src/lib/source-ownership.mjs';
 const seed=JSON.parse(readFileSync(new URL('./examples/workspace.json',import.meta.url),'utf8'));
 const path=fileURLToPath(new URL('./.data/workspace.sqlite',import.meta.url));
 function localError(req:any){const host=String(req.headers.host||'');if(!/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host))return 'Local connections only';
@@ -20,18 +20,18 @@ function api(server:any){const store=workspaceStore(path,seed);const inventory=i
    const workspace=store.read().data;const project=workspace.projects.find((p:any)=>p.id===params.get('project'));
    if(!project)return json({error:'Unknown project'},404);
    if(req.method==='GET'){
-    if(params.has('page')){const page=inventory.page(Number(params.get('page')));if(!page||page.project_id!==project.id)return json({error:'Unknown page'},404);return json({page});}
-    const domains=inventory.list(project.id),domainId=params.get('domain');
+    if(params.has('page')){const page=inventory.page(Number(params.get('page')));if(!page||page.project_id!==project.id||!registeredDomain(project,inventory.domain(page.domain_id)!.host))return json({error:'Unknown page'},404);return json({page});}
+    const domains=inventory.list(project.id).filter((domain:any)=>registeredDomain(project,domain.host)),domainId=params.get('domain');
     if(domainId&&!domains.some((d:any)=>d.id===domainId))return json({error:'Unknown domain'},404);
     const counts=citationCounts(workspace.answers.filter((a:any)=>a.projectId===project.id));
-    const sources=[...counts].map(([url,count])=>({url,count,...sourceOwner(url,project,domains.map((d:any)=>d.host))})).sort((a,b)=>b.count-a.count);
+    const sources=[...counts].map(([url,count])=>({url,count,...sourceOwner(url,project)})).sort((a,b)=>b.count-a.count);
     return json({domains,pages:domainId?inventory.pages(domainId).map((p:any)=>({...p,citations:counts.get(pageURL(p.url))||0})):[],sources});
    }
    if(req.method!=='POST')return json({error:'Method not allowed'},405);
    let body='';for await(const chunk of req){body+=chunk.toString();if(Buffer.byteLength(body)>10000)return json({error:'Request too large'},413);}
    let input;try{input=JSON.parse(body);}catch{return json({error:'Invalid JSON'},400);}
    if(typeof input.domain!=='string')return json({error:'A domain is required'},400);
-   try{const host=domainHost(input.domain);if(![project.domain,...(project.ownedDomains||[])].filter(Boolean).some((value:string)=>{try{return domainHost(value)===host;}catch{return false;}}))return json({error:'Save this domain as client-owned before creating its inventory.'},400);
+   try{const host=domainHost(input.domain);if(!registeredDomain(project,host))return json({error:'Save this domain as client-owned before creating its inventory.'},400);
     return json({domain:inventory.add(project.id,host)},201);}catch{return json({error:'Enter a valid domain or subdomain without a path or port.'},400);}
   }catch{return json({error:'Inventory storage failed'},500);}
  });
