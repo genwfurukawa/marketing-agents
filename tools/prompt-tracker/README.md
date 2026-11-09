@@ -35,6 +35,77 @@ Four prompts × four providers × one repetition = 16 results. Sixteen prompts g
 
 No new paid API calls are required to open the dashboard or run tests. An interrupted process after a provider accepts a request may incur a charge without a saved result; exactly-once billing cannot be guaranteed.
 
+## Bright Data first, with API failover
+
+Use this route to collect the consumer ChatGPT, Gemini and Perplexity surfaces.
+Claude is not supported by this route. The existing direct API runner is unchanged.
+No Claude installation, external queue, server or database is needed for collection.
+
+1. Set `BRIGHTDATA_API_KEY` in `.env`. Your Bright Data account must have access
+   to the selected scrapers and sufficient credit. Confirm their dataset IDs in
+   your account; the example uses the ChatGPT, Gemini and Perplexity scraper IDs.
+2. Set the fallback keys: `OPENAI_API_KEY`, `GEMINI_API_KEY` (or
+   `GOOGLE_GENAI_API_KEY`), and `PERPLEXITY_API_KEY`. Only keys for the selected
+   routes are required. The runner checks all primary and fallback keys before
+   submitting work. A route may specify `keyEnv` to use another environment name.
+3. Copy `examples/providers.brightdata.json` to `.data/providers.brightdata.json`.
+   Replace fallback model placeholders with available models that support the
+   configured search tools. Remove unwanted surfaces explicitly.
+4. Export the dashboard workspace and run:
+
+```bash
+python3 scripts/run.py --workspace .data/workspace.json --config .data/providers.brightdata.json --project YOUR_PROJECT_ID --output captures/week-1 --env .env --dry-run
+python3 scripts/run.py --workspace .data/workspace.json --config .data/providers.brightdata.json --project YOUR_PROJECT_ID --output captures/week-1 --env .env
+node scripts/import-captures.mjs .data/workspace.json captures/week-1 .data/answers.csv
+```
+
+Import the CSV through **Answer evidence** and review recommendation labels as
+usual. Bright Data records use `Consumer UI` and provider `BrightData`; fallback
+records use `API` and the actual API provider/model. Filter collection method
+before comparing rates. The importer does not turn retrieved search results into
+citations. Recommendation parsing and scoring are still human-reviewed.
+
+The fixed `MAX_CONCURRENT_TASKS = 5` in `scripts/brightdata.py` allows five
+prompt/surface/repetition tasks at once. Each task tries Bright Data up to **three
+total attempts**, then uses the matching direct API for up to three attempts.
+There is no cross-surface fallback. Each new collection attempt can incur usage.
+Keep Bright Data configs in separate output folders from direct API cohorts.
+
+Task state and original responses are saved as atomic JSON files. The runner:
+
+- Saves each snapshot ID before polling, and resumes the saved snapshot after a
+  restart. Running or building snapshots are polled again rather than resubmitted.
+- Retries failed snapshots, error/empty records, provider error pages and explicit
+  HTTP 4xx rejections (except 408). Failed poll/download requests retry the same
+  snapshot with backoff. A snapshot has a 20-minute deadline that survives restarts. These
+  snapshots are retained in task history; the remote job may still finish.
+  On resume, even an expired snapshot is checked for a finished result before a
+  new collection is submitted. Unavailable progress/download reads pause it for
+  a later resume rather than discarding a possibly finished result.
+- Saves backoff deadlines, honors `Retry-After`, and retains failed attempts.
+- Uses one durable HTTP request cap shared by all five workers. **Every trigger,
+  poll, download and fallback request counts**, including retries. `maxRequests`
+  is not a dollar budget. Set account spending limits separately.
+- Stops at `maxRunSeconds` or the request cap with pending work saved. Run the
+  same command to resume; raise `maxRequests` explicitly if it was exhausted.
+- Holds a local OS lock for the output folder, preventing two processes from
+  running the same round concurrently. The lock is released after a crash.
+
+If a POST times out, loses its connection, returns HTTP 408 or 5xx, or collection is
+interrupted before the response is saved, its status is `SubmissionUnknown`.
+It is **not automatically resubmitted or sent to fallback**, because the provider
+may already have accepted and billed it. Check provider history first. These
+records, along with pending records, are excluded from CSV imports. The runner
+exits nonzero unless every task is captured. Inspect the task's `pauseReason` or
+`error` when a run needs attention. Completed tasks are skipped on resume.
+
+Each week is a new output folder (`captures/week-2`, etc.). This release does not
+schedule runs. The computer must stay awake while the runner is working. Changing
+prompts, scraper settings or fallback models requires a new round; operational
+request/time limits can be raised when resuming the same round.
+
+Bright Data reference: [ChatGPT scraper and trigger payload](https://brightdata.com/products/web-scraper/chatgpt).
+
 ## What each surface means
 
 | Label | Default collection route | What it measures |

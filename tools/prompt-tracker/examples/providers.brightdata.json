@@ -1,0 +1,45 @@
+{
+  "repetitions": 1,
+  "maxRequests": 1000,
+  "pollIntervalSeconds": 15,
+  "maxRunSeconds": 3600,
+  "providers": [
+    {
+      "label": "ChatGPT",
+      "provider": "BrightData",
+      "datasetId": "gd_m7aof0k82r803d5bjm",
+      "country": "US",
+      "search": true,
+      "fallback": {
+        "provider": "OpenAI",
+        "model": "REPLACE_WITH_AVAILABLE_OPENAI_MODEL",
+        "search": true,
+        "searchBackend": "OpenAI web search"
+      }
+    },
+    {
+      "label": "Gemini",
+      "provider": "BrightData",
+      "datasetId": "gd_mbz66arm2mf9cu856y",
+      "country": "US",
+      "fallback": {
+        "provider": "Google",
+        "model": "REPLACE_WITH_AVAILABLE_GEMINI_MODEL",
+        "search": true,
+        "searchBackend": "Google Search grounding"
+      }
+    },
+    {
+      "label": "Perplexity",
+      "provider": "BrightData",
+      "datasetId": "gd_m7dhdot1vw9a7gc1n",
+      "country": "US",
+      "fallback": {
+        "provider": "Perplexity",
+        "model": "REPLACE_WITH_AVAILABLE_AGENT_MODEL",
+        "search": true,
+        "searchBackend": "Perplexity web search"
+      }
+    }
+  ]
+}
