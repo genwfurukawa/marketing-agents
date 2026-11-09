@@ -18,6 +18,10 @@ The 0.1 dashboard supports manual Google AI Overviews records, including a succe
 
 An optional Bright Data route collects the ChatGPT, Gemini and Perplexity consumer surfaces using five local workers. Each task tries up to three Bright Data collections before using an explicitly configured same-surface API fallback. Capture files retain snapshot IDs, attempt history and actual collection/provider metadata. Consumer and API answers remain separate measurement cohorts. No built-in browser scraper, hosted queue or recurring scheduler is introduced. See the [runner setup and recovery rules](../../tools/prompt-tracker/README.md#bright-data-first-with-api-failover).
 
+The optional Site inventory tab registers client-owned domains/subdomains and provides a local sitemap collection command. It saves current extracted page text, refresh status and one embedding per page as compact binary values in a separate SQLite file. Unchanged pages reuse their embeddings; partial refreshes preserve saved pages and the last successful refresh time. JavaScript rendering, playbook retrieval and automatic external-site crawling remain outside this feature.
+
+Owned domains and one-to-many competitor-domain mappings are project settings shared by captures/imports and source classification. Citation URLs are classified as first-party, competitor or third-party using explicit domain rules, including subdomains. The inventory shows citation counts from captured answers independently of page collection; adding a competitor domain does not crawl it.
+
 ## Core user journey
 
 1. Create a project: brand aliases, owned domains, competitors, audience, market and language.

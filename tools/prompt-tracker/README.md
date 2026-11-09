@@ -106,6 +106,80 @@ request/time limits can be raised when resuming the same round.
 
 Bright Data reference: [ChatGPT scraper and trigger payload](https://brightdata.com/products/web-scraper/chatgpt).
 
+## Site inventory and source ownership
+
+Open **Site inventory** for a client and add its domains or subdomains. Each
+entry has a **Copy scrape command** button. Run the command from
+`tools/prompt-tracker` with `OPENAI_API_KEY` configured in `.env`:
+
+```bash
+npm run inventory -- --project YOUR_PROJECT_ID --domain example.com --env .env
+```
+
+`--dry-run` checks the project/domain without making network requests.
+Domains must first be registered as client-owned in the tab (the project's
+primary domain is already eligible). The same owned-domain rules are used by
+manual captures, CSV imports and source classification.
+`--max-pages 200` is the default; the hard maximum is 1,000. Discovery follows
+at most 20 sitemaps, five page workers run concurrently, each HTTP response is
+limited to 2 MB, and a refresh has a ten-minute budget. Sitemap discovery is
+limited to the selected host and its `www` alias. Other subdomains must be added
+separately. Robots exclusions are respected; sites requesting a crawl delay are
+held rather than fetched without pacing. JavaScript rendering is not included.
+Private IPs and cross-domain redirects are rejected.
+
+The command saves extracted text, title, description, declared canonical and
+robots metadata. It stores **one embedding per page**, using
+`text-embedding-3-small` (1,536 dimensions). Only a bounded prefix of title/text
+(8,000 UTF-8 bytes) is sent for embedding, keeping even non-English inputs below
+the model token limit. The saved text remains available in the page viewer.
+There is no playbook retrieval or section-level embedding yet.
+
+Embeddings use ordinary SQLite binary columns. **No native vector extension,
+database server or extra background service is required.** Vectors are stored as
+little-endian float32 values, about
+6 KB per page plus SQLite overhead and the saved text. Only the current page
+content/vector is retained. Changed content replaces the old vector; unchanged,
+successfully indexed pages skip the embedding call. Embedding failure preserves
+the new text with an explicit index error so rerunning retries it. Fetch failure
+preserves previous text and its index. Pages absent from a later sitemap are not
+automatically deleted.
+
+The tab shows page/index counts, the latest attempt, last successful refresh and
+per-page errors. Partial or failed refreshes do not advance the last-success
+timestamp. A crashed command can be rerun after its two-minute writer lease
+expires; completed pages are reused and unchanged indexed pages are not billed
+for embeddings again. Live scraping and embedding incur normal provider usage.
+
+**Source ownership:** add one or more domains for each existing competitor in
+the tab. A root domain also matches its subdomains, so `vanta.com` includes
+`docs.vanta.com`; unrelated domains can be assigned to the same competitor too.
+These are classification rules, not crawl targets. Client-owned domains take
+precedence, then the most specific matching competitor rule, then third-party.
+Missing competitor mappings remain visible in the tab and can leave sources
+classified as third-party. Competitor names alone are not used to infer domains.
+
+The cited-source list comes from captured answer citation URLs, including manual
+captures. It counts each answer once per normalized URL (deduplicating fragments,
+`www` and `utm_` parameters). It shows first-party, competitor and third-party
+counts without fetching external pages. Saved client pages show their matching
+citation count. The tab labels its counts as all recorded dates/surfaces; the
+Overview retains its existing date/surface/collection filters.
+
+Source extraction makes no LLM calls. Direct APIs use OpenAI annotations, Gemini
+grounding, Claude citation blocks and referenced Perplexity source IDs. Bright
+Data additionally normalizes structured citation fields, explicit `cited` flags,
+ChatGPT citation chips and Perplexity citation chips from the returned HTML.
+Unbound search results remain retrieved sources; generic links do not become
+citations. Original responses stay in the run's capture files, and new Bright Data
+captures record `sourceParserVersion`. Existing captures are not silently rewritten.
+
+**Backup:** page text, domain refresh state and vectors live separately in
+`.data/inventory.sqlite`, not inside the workspace JSON or JSON backup. Owned and
+competitor domain mappings are part of the workspace backup. To move the complete local
+setup, stop the dashboard and collection commands, then copy the entire `.data/`
+directory (including any SQLite WAL files). Do not commit it. The inventory uses the same built-in Node SQLite as the dashboard.
+
 ## What each surface means
 
 | Label | Default collection route | What it measures |
