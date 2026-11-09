@@ -253,7 +253,7 @@ class CollectionTests(unittest.TestCase):
             {'url': 'https://cited.example'}, {'url': 'https://unused.example', 'cited': False}],
             'search_sources': [{'url': 'https://retrieved.example'}]})
         self.assertEqual(cited, ['https://cited.example'])
-        self.assertEqual(len(sources), 1)
+        self.assertEqual({s['url'] for s in sources}, {'https://retrieved.example', 'https://unused.example'})
         with self.assertRaises(ValueError):
             bd.extract_row({'error': 'blocked', 'answer_text': text})
 

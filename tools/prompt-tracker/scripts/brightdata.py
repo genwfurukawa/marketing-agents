@@ -81,15 +81,9 @@ def extract_row(row):
     for key in ('citations', 'search_sources', 'sources'):
         if row.get(key) is not None and not isinstance(row[key], list):
             raise ValueError('Bright Data returned an invalid ' + key + ' list.')
-    citations = []
-    for source in row.get('citations') or []:
-        if isinstance(source, dict) and source.get('cited') is not False:
-            url = source.get('url')
-            if isinstance(url, str) and urllib.parse.urlparse(url).scheme in ('http', 'https'):
-                citations.append(url)
-    sources = [s for key in ('search_sources', 'sources') for s in row.get(key, []) or []
-               if isinstance(s, dict)]
-    return text, list(dict.fromkeys(citations)), sources
+    from extractors import extract_brightdata_sources
+    citations, sources = extract_brightdata_sources(row)
+    return text, citations, sources
 
 
 def atomic_json(path, value, secrets):
@@ -306,6 +300,7 @@ class Runner:
                 attempt['status'] = 'Captured'
                 task.update(status='Captured', provider='BrightData', collection='Consumer UI',
                             answer=text, citations=cited, retrievedSources=sources, raw=rows[0],
+                            sourceParserVersion='brightdata-sources-v1',
                             model=rows[0]['model'] if isinstance(rows[0].get('model'), str) else '', searchEnabled=route.get('search'),
                             searchBackend='Bright Data consumer surface', region=route['country'])
                 break
