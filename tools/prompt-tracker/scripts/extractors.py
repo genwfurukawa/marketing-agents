@@ -1,5 +1,84 @@
 """Provider response extraction; retrieved sources are distinct from final citations."""
 import json,re
+from html.parser import HTMLParser
+from urllib.parse import urlparse
+
+
+class _CitationChips(HTMLParser):
+    """KnitKnot's ChatGPT/Perplexity chip shapes, read without a browser or LLM."""
+    VOID = {'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'}
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.stack = []
+        self.urls = []
+
+    def handle_starttag(self, tag, attributes):
+        attrs = dict(attributes)
+        payload = attrs.get('data-assistant-sources-payload')
+        if payload:
+            try:
+                items = json.loads(payload)
+                if isinstance(items, list):
+                    self.urls.extend(item['url'] for item in items if isinstance(item, dict) and isinstance(item.get('url'), str))
+            except ValueError:
+                pass  # Optional chip metadata is unusable; don't invent citations.
+        if attrs.get('data-pplx-citation-url'):
+            self.urls.append(attrs['data-pplx-citation-url'])
+        if tag == 'a' and any(pill for _, pill in self.stack) and attrs.get('href'):
+            self.urls.append(attrs['href'])
+        if tag not in self.VOID:
+            self.stack.append((tag, attrs.get('data-testid') == 'webpage-citation-pill'))
+
+    def handle_endtag(self, tag):
+        for i in range(len(self.stack) - 1, -1, -1):
+            if self.stack[i][0] == tag:
+                del self.stack[i:]
+                break
+
+
+def extract_brightdata_sources(row):
+    """Normalize KnitKnot's source fields/chips while preserving cited vs retrieved.
+
+    Explicit citation fields, cited flags and visible citation chips establish
+    citations. Unbound search results remain retrieved sources only. The original
+    response stays in the capture record.
+    """
+    sources = {}
+
+    def add(source, cited=False):
+        if not isinstance(source, dict) or not isinstance(source.get('url'), str):
+            return
+        url = source['url'].strip()
+        try:
+            parsed = urlparse(url)
+            if parsed.scheme not in ('http', 'https') or not parsed.hostname or parsed.username or parsed.password:
+                return
+            domain = parsed.hostname.removeprefix('www.')
+        except ValueError:
+            return
+        if url not in sources:
+            sources[url] = {'url': url, 'title': source.get('title') if isinstance(source.get('title'), str) else '',
+                            'domain': domain, 'position': len(sources) + 1, 'cited': False}
+        sources[url]['cited'] = sources[url]['cited'] or cited
+        if source.get('id') is not None:
+            sources[url]['id'] = source['id']
+
+    for field in ('citations', 'search_sources', 'sources'):
+        for source in row.get(field) or []:
+            if isinstance(source, dict):
+                add(source, source.get('cited') is not False if field == 'citations' else source.get('cited') is True)
+    page = row.get('answer_html')
+    if isinstance(page, str):
+        chips = _CitationChips()
+        try:
+            chips.feed(page)
+            chips.close()
+        except (ValueError, AssertionError):
+            chips.urls = []  # An unusable optional HTML field does not invalidate structured citations.
+        for url in chips.urls:
+            add({'url': url}, True)
+    return [s['url'] for s in sources.values() if s['cited']], [s for s in sources.values() if not s['cited']]
 
 def extract_openai(raw):
     text=[];citations=[];retrieved=[];searched=False
@@ -44,7 +123,7 @@ def extract_gemini(raw):
         text+='\n'+'\n'.join(p.get('text','') for p in candidate.get('content',{}).get('parts',[]) if not p.get('thought'))
         gm=candidate.get('groundingMetadata',{});searched=searched or bool(gm.get('webSearchQueries'))
         chunks=gm.get('groundingChunks',[]);retrieved.extend(c.get('web',{}) for c in chunks)
-        indices={i for s in gm.get('groundingSupports',[]) for i in s.get('groundingChunkIndices',[])}
+        indices={i for s in gm.get('groundingSupports',[]) for i in s.get('groundingChunkIndices',[]) if type(i) is int and i>=0}
         cited.extend(chunks[i]['web']['uri'] for i in indices if i<len(chunks) and chunks[i].get('web',{}).get('uri'))
     return text.strip(),list(dict.fromkeys(cited)),retrieved,searched
 

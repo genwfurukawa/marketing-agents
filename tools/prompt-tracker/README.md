@@ -35,6 +35,151 @@ Four prompts × four providers × one repetition = 16 results. Sixteen prompts g
 
 No new paid API calls are required to open the dashboard or run tests. An interrupted process after a provider accepts a request may incur a charge without a saved result; exactly-once billing cannot be guaranteed.
 
+## Bright Data first, with API failover
+
+Use this route to collect the consumer ChatGPT, Gemini and Perplexity surfaces.
+Claude is not supported by this route. The existing direct API runner is unchanged.
+No Claude installation, external queue, server or database is needed for collection.
+
+1. Set `BRIGHTDATA_API_KEY` in `.env`. Your Bright Data account must have access
+   to the selected scrapers and sufficient credit. Confirm their dataset IDs in
+   your account; the example uses the ChatGPT, Gemini and Perplexity scraper IDs.
+2. Set the fallback keys: `OPENAI_API_KEY`, `GEMINI_API_KEY` (or
+   `GOOGLE_GENAI_API_KEY`), and `PERPLEXITY_API_KEY`. Only keys for the selected
+   routes are required. The runner checks all primary and fallback keys before
+   submitting work. A route may specify `keyEnv` to use another environment name.
+3. Copy `examples/providers.brightdata.json` to `.data/providers.brightdata.json`.
+   Replace fallback model placeholders with available models that support the
+   configured search tools. Remove unwanted surfaces explicitly.
+4. Export the dashboard workspace and run:
+
+```bash
+python3 scripts/run.py --workspace .data/workspace.json --config .data/providers.brightdata.json --project YOUR_PROJECT_ID --output captures/week-1 --env .env --dry-run
+python3 scripts/run.py --workspace .data/workspace.json --config .data/providers.brightdata.json --project YOUR_PROJECT_ID --output captures/week-1 --env .env
+node scripts/import-captures.mjs .data/workspace.json captures/week-1 .data/answers.csv
+```
+
+Import the CSV through **Answer evidence** and review recommendation labels as
+usual. Bright Data records use `Consumer UI` and provider `BrightData`; fallback
+records use `API` and the actual API provider/model. Filter collection method
+before comparing rates. The importer does not turn retrieved search results into
+citations. Recommendation parsing and scoring are still human-reviewed.
+
+The fixed `MAX_CONCURRENT_TASKS = 5` in `scripts/brightdata.py` allows five
+prompt/surface/repetition tasks at once. Each task tries Bright Data up to **three
+total attempts**, then uses the matching direct API for up to three attempts.
+There is no cross-surface fallback. Each new collection attempt can incur usage.
+Keep Bright Data configs in separate output folders from direct API cohorts.
+
+Task state and original responses are saved as atomic JSON files. The runner:
+
+- Saves each snapshot ID before polling, and resumes the saved snapshot after a
+  restart. Running or building snapshots are polled again rather than resubmitted.
+- Retries failed snapshots, error/empty records, provider error pages and explicit
+  HTTP 4xx rejections (except 408). Failed poll/download requests retry the same
+  snapshot with backoff. A snapshot has a 20-minute deadline that survives restarts. These
+  snapshots are retained in task history; the remote job may still finish.
+  On resume, even an expired snapshot is checked for a finished result before a
+  new collection is submitted. Unavailable progress/download reads pause it for
+  a later resume rather than discarding a possibly finished result.
+- Saves backoff deadlines, honors `Retry-After`, and retains failed attempts.
+- Uses one durable HTTP request cap shared by all five workers. **Every trigger,
+  poll, download and fallback request counts**, including retries. `maxRequests`
+  is not a dollar budget. Set account spending limits separately.
+- Stops at `maxRunSeconds` or the request cap with pending work saved. Run the
+  same command to resume; raise `maxRequests` explicitly if it was exhausted.
+- Holds a local OS lock for the output folder, preventing two processes from
+  running the same round concurrently. The lock is released after a crash.
+
+If a POST times out, loses its connection, returns HTTP 408 or 5xx, or collection is
+interrupted before the response is saved, its status is `SubmissionUnknown`.
+It is **not automatically resubmitted or sent to fallback**, because the provider
+may already have accepted and billed it. Check provider history first. These
+records, along with pending records, are excluded from CSV imports. The runner
+exits nonzero unless every task is captured. Inspect the task's `pauseReason` or
+`error` when a run needs attention. Completed tasks are skipped on resume.
+
+Each week is a new output folder (`captures/week-2`, etc.). This release does not
+schedule runs. The computer must stay awake while the runner is working. Changing
+prompts, scraper settings or fallback models requires a new round; operational
+request/time limits can be raised when resuming the same round.
+
+Bright Data reference: [ChatGPT scraper and trigger payload](https://brightdata.com/products/web-scraper/chatgpt).
+
+## Site inventory and source ownership
+
+Open **Site inventory** for a client and add its domains or subdomains. Each
+entry has a **Copy scrape command** button. Run the command from
+`tools/prompt-tracker` with `OPENAI_API_KEY` configured in `.env`:
+
+```bash
+npm run inventory -- --project YOUR_PROJECT_ID --domain example.com --env .env
+```
+
+`--dry-run` checks the project/domain without making network requests.
+Domains must first be registered as client-owned in the tab (the project's
+primary domain is already eligible). The same owned-domain rules are used by
+manual captures, CSV imports and source classification.
+`--max-pages 200` is the default; the hard maximum is 1,000. Discovery follows
+at most 20 sitemaps, five page workers run concurrently, each HTTP response is
+limited to 2 MB, and a refresh has a ten-minute budget. Sitemap discovery is
+limited to the selected host and its `www` alias. Other subdomains must be added
+separately. Robots exclusions are respected; sites requesting a crawl delay are
+held rather than fetched without pacing. JavaScript rendering is not included.
+Private IPs and cross-domain redirects are rejected.
+
+The command saves extracted text, title, description, declared canonical and
+robots metadata. It stores **one embedding per page**, using
+`text-embedding-3-small` (1,536 dimensions). Only a bounded prefix of title/text
+(8,000 UTF-8 bytes) is sent for embedding, keeping even non-English inputs below
+the model token limit. The saved text remains available in the page viewer.
+There is no playbook retrieval or section-level embedding yet.
+
+Embeddings use ordinary SQLite binary columns. **No native vector extension,
+database server or extra background service is required.** Vectors are stored as
+little-endian float32 values, about
+6 KB per page plus SQLite overhead and the saved text. Only the current page
+content/vector is retained. Changed content replaces the old vector; unchanged,
+successfully indexed pages skip the embedding call. Embedding failure preserves
+the new text with an explicit index error so rerunning retries it. Fetch failure
+preserves previous text and its index. Pages absent from a later sitemap are not
+automatically deleted.
+
+The tab shows page/index counts, the latest attempt, last successful refresh and
+per-page errors. Partial or failed refreshes do not advance the last-success
+timestamp. A crashed command can be rerun after its two-minute writer lease
+expires; completed pages are reused and unchanged indexed pages are not billed
+for embeddings again. Live scraping and embedding incur normal provider usage.
+
+**Source ownership:** add one or more domains for each existing competitor in
+the tab. A root domain also matches its subdomains, so `vanta.com` includes
+`docs.vanta.com`; unrelated domains can be assigned to the same competitor too.
+These are classification rules, not crawl targets. Client-owned domains take
+precedence, then the most specific matching competitor rule, then third-party.
+Missing competitor mappings remain visible in the tab and can leave sources
+classified as third-party. Competitor names alone are not used to infer domains.
+
+The cited-source list comes from captured answer citation URLs, including manual
+captures. It counts each answer once per normalized URL (deduplicating fragments,
+`www` and `utm_` parameters). It shows first-party, competitor and third-party
+counts without fetching external pages. Saved client pages show their matching
+citation count. The tab labels its counts as all recorded dates/surfaces; the
+Overview retains its existing date/surface/collection filters.
+
+Source extraction makes no LLM calls. Direct APIs use OpenAI annotations, Gemini
+grounding, Claude citation blocks and referenced Perplexity source IDs. Bright
+Data additionally normalizes structured citation fields, explicit `cited` flags,
+ChatGPT citation chips and Perplexity citation chips from the returned HTML.
+Unbound search results remain retrieved sources; generic links do not become
+citations. Original responses stay in the run's capture files, and new Bright Data
+captures record `sourceParserVersion`. Existing captures are not silently rewritten.
+
+**Backup:** page text, domain refresh state and vectors live separately in
+`.data/inventory.sqlite`, not inside the workspace JSON or JSON backup. Owned and
+competitor domain mappings are part of the workspace backup. To move the complete local
+setup, stop the dashboard and collection commands, then copy the entire `.data/`
+directory (including any SQLite WAL files). Do not commit it. The inventory uses the same built-in Node SQLite as the dashboard.
+
 ## What each surface means
 
 | Label | Default collection route | What it measures |

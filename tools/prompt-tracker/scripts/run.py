@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Independent API observations with immutable run identity and resumable capture.
-Uses Python standard library. No brand-specific scoring or automatic routing fallback.
+Uses Python standard library. Bright Data routes have explicitly configured API fallback.
 """
 import argparse,datetime,hashlib,json,os,time,urllib.error,urllib.request
 from pathlib import Path
@@ -26,6 +26,10 @@ def manifest_for(workspace,project,providers,repetitions):
     if len({p['label'] for p in providers})!=len(providers):raise ValueError('Duplicate provider labels')
     for p in providers:
         if p['label'] not in labels:raise ValueError('Unknown surface')
+        if p['provider']=='BrightData':
+            from brightdata import validate_route
+            validate_route(p)
+            continue
         expected={'ChatGPT':'OpenAI','Claude':'Anthropic','Gemini':'Google','Perplexity':'Perplexity'}[p['label']]
         if p['provider']!=expected and not(p['label']=='Gemini' and p['provider']=='Perplexity'):raise ValueError('Unsupported explicit route')
         if not p.get('model') or p['model'].startswith('REPLACE_'):raise ValueError('Replace the example model placeholder with an available exact model ID')
@@ -56,6 +60,10 @@ def main():
     workspace=json.loads(Path(args.workspace).read_text());workspace=workspace.get('data',workspace);config=json.loads(Path(args.config).read_text());routes=config['providers'];manifest=manifest_for(workspace,args.project,routes,config.get('repetitions',1));run_id=digest(manifest)[:24]
     expected=len(manifest['prompts'])*len(routes)*manifest['repetitions'];cap=config.get('maxRequests',expected)
     if not isinstance(cap,int) or cap<1:raise SystemExit('maxRequests must be positive')
+    if any(r['provider']=='BrightData' for r in routes):
+        from brightdata import run_cohort
+        if not all(r['provider']=='BrightData' for r in routes):raise SystemExit('Use a separate config and output folder for Bright Data consumer collections.')
+        raise SystemExit(run_cohort(args,config,manifest,run_id))
     print(f'{expected} results requested; HTTP request cap {cap}; run {run_id}. A new output directory creates a new round.')
     if args.dry_run:return
     env=env_file(args.env);secrets=[v for k,v in env.items() if ('KEY' in k or 'PASSWORD' in k) and v];keys={}
