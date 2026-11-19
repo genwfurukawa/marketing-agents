@@ -1,0 +1,5 @@
+# One phrase per line. The grep gate fails any draft containing one. Lines starting with # are ignored.
+in today's fast-paced world
+game-changer
+unlock the power
+leverage synergies

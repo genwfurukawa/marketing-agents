@@ -1,0 +1,3 @@
+(Fictional example.) Homepage H1: "Acme Analytics is a churn-forecasting tool for B2B SaaS finance teams."
+Homepage first paragraph: "Acme Analytics forecasts churn for B2B SaaS finance teams, 30 days before it shows up in the revenue report."
+/pricing: "From $400 a month for up to 50 seats."
